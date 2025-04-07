@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+        {% load static %}
+<html>
+<head>
+    <title>Nearby Search</title>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCidnDGbdamsCKo2-6oQthbnZvR5iocszY&libraries=places&callback=initMap" async defer></script>
+    <style>
+        .infowindow-content{
+            background: whitesmoke;
+            height: 200px;
+            width: 200px;
+        }
+
+
+    .info-card {
+      background: white;
+      padding: 2rem;
+      border-radius: 20px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+      max-width: 360px;
+      width: 100%;
+      text-align: center;
+      transition: 0.3s ease;
+    }
+
+    .info-card:hover {
+      transform: translateY(-6px);
+    }
+
+    .info-card h2 {
+      font-size: 1.8rem;
+      margin-bottom: 0.25rem;
+      color: #1f2937;
+    }
+
+    .type {
+      font-size: 1rem;
+      color: #6b7280;
+      margin-bottom: 1rem;
+    }
+
+    .details {
+      text-align: left;
+      margin-top: 1.5rem;
+    }
+
+    .details div {
+      display: flex;
+      align-items: center;
+      margin: 0.5rem 0;
+      font-size: 0.95rem;
+      color: #374151;
+    }
+
+    .details div i {
+      width: 24px;
+      margin-right: 10px;
+      color: #4f46e5;
+    }
+
+    .rating {
+      color: #facc15;
+      font-size: 1.1rem;
+    }
+
+    @media (max-width: 400px) {
+      .info-card {
+        padding: 1.5rem;
+      }
+    }
+    </style>
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <script>
+    let map;
+    let autocomplete;
+    let markers = [];
+    let searchMarker;
+    let searchCircle;
+    let activeInfoWindow;
+
+    function initMap() {
+        map = new google.maps.Map(document.getElementById('map'), {
+
+            zoom: 15,
+            center: { lat: 25.4693725, lng: 81.8505639 },
+            zoom: 14,
+            center: { lat: 37.4224764, lng: -122.0842499 }
+
+        });
+
+        autocomplete = new google.maps.places.Autocomplete(document.getElementById('autocomplete'));
+        autocomplete.addListener('place_changed', onPlaceChanged);
+
+        document.getElementById('autocomplete').addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                onPlaceChanged();
+            }
+        });
+
+        document.getElementById('search-button').addEventListener('click', onPlaceChanged);
+
+        // Add click event listener to the map
+        map.addListener('click', function(event) {
+            placeSearchMarker(event.latLng);
+        });
+    }
+
+    function onPlaceChanged() {
+        const place = autocomplete.getPlace();
+        if (!place.geometry) {
+            const firstResult = document.querySelector('.pac-item');
+            if (firstResult) {
+                const simulatedClick = new MouseEvent('mousedown', {
+                    bubbles: true,
+                    cancelable: true,
+                    view: window
+                });
+                firstResult.dispatchEvent(simulatedClick);
+            } else {
+                document.getElementById('autocomplete').placeholder = 'Enter a place';
+            }
+        } else {
+            const location = place.geometry.location;
+            console.log('Placing search marker at:', location); // Debug log
+            placeSearchMarker(location);
+        }
+    }
+
+    function placeSearchMarker(location) {
+        clearMarkers();
+        if (searchCircle) {
+            searchCircle.setMap(null);
+        }
+        if (searchMarker) {
+            searchMarker.setMap(null);
+        }
+
+        map.setCenter(location);
+
+
+        // {#searchMarker = new google.maps.Marker({#}
+        // {#    position: location,#}
+        // {#    map: map,#}
+        // {#    title: 'Search Point'#}
+        // {# });
+
+
+        searchCircle = new google.maps.Circle({
+            map: map,
+            radius: 1500,
+            fillColor: '#ADD8E6',
+            fillOpacity: 0.35,
+            strokeColor: '#ADD8E6',
+            strokeOpacity: 0.8,
+            strokeWeight: 2,
+            center: location
+        });
+
+        fetchPlacesAndEvents(location);
+    }
+
+
+    // {#function fetchPlacesAndEvents(location) {#}
+    // {#    const placeType = document.getElementById('place-type').value;#}
+    // {#    fetch(`/api/nearby-search/?location=${location.lat()},${location.lng()}&radius=1500&type=${placeType}`)#}
+    // {#        .then(response => response.json())#}
+    // {#        .then(data => {#}
+    // {#            clearMarkers();#}
+    // {#            data.places.forEach(place => {#}
+    // {#                const marker = new google.maps.Marker({#}
+    // {#                    position: { lat: place.geometry.location.lat, lng: place.geometry.location.lng },#}
+    // {#                    map: map,#}
+    // {#                    title: place.name,#}
+    // {#                    icon: {#}
+    // {#                        url: place.icon,#}
+    // {#                        scaledSize: new google.maps.Size(20, 20),#}
+    // {#                    }#}
+    // {##}
+    // {#                });#}
+    // {#                markers.push(marker);#}
+    // {##}
+    // {##}
+    //                 {#console.log(place)#}
+    // {#                const infowindow = new google.maps.InfoWindow({#}
+    // {#                    content:`<div class="info-card">#}
+    // {#                                <h2>${place.name}</h2>#}
+    // {#                                <div class="type">Type: ${place.types[0][0].toUpperCase() + place.types[0].substring(1)}</div>#}
+    // {##}
+    // {#                                <div class="details">#}
+    // {#                                  <div><i class="fas fa-star"></i><span class="rating">${place.rating ?? "Not Rated"} / 5.0</span></div>#}
+    // {#                                  <div><i class="far fa-clock"></i>10:00 AM – 10:00 PM</div>#}
+    // {##}
+    // {#                                  <div><i class="fas fa-phone"></i>${#}
+    // {#                                        fetch(`https://maps.googleapis.com/maps/api/place/details/json?place_id=${place.place_id}&fields=name,formatted_phone_number,international_phone_number,website&key=AIzaSyCidnDGbdamsCKo2-6oQthbnZvR5iocszY`)#}
+    // {#                                            .then(response => response.json())#}
+    // {#                                            .then(data => {#}
+    // {#                                                const phoneNumber = data.result.formatted_phone_number;#}
+    // {#                                                return phoneNumber ? phoneNumber : "Not Available";#}
+    // {#                                            })#}
+    // {#                                    }</div>#}
+    // {#                                </div>#}
+    // {#                             </div>`#}
+    // {#                });#}
+    // {##}
+    // {#                marker.addListener('click', function() {#}
+    // {#                    if (activeInfoWindow) {#}
+    // {#                        activeInfoWindow.close();#}
+    // {#                    }#}
+    // {#                    infowindow.open(map, marker);#}
+    // {#                    activeInfoWindow = infowindow;#}
+    // {#                });#}
+    // {##}
+    // {#                google.maps.event.addListener(infowindow, 'closeclick', function() {#}
+    // {#                    activeInfoWindow = null;#}
+    // {#                });#}
+    // {#            });#}
+    // {##}
+    // {##}
+    // {##}
+    // {#            data.events.forEach(event => {#}
+    // {#                const marker = new google.maps.Marker({#}
+    // {#                    position: { lat: event.venue.latitude, lng: event.venue.longitude },#}
+    // {#                    map: map,#}
+    // {#                    title: event.name.text#}
+    // {#                });#}
+    // {#                markers.push(marker);#}
+    // {##}
+    // {#                const infowindow = new google.maps.InfoWindow({#}
+    // {#                    content: `<div class="infowindow-content">#}
+    // {#                                <strong>${event.name.text}</strong><br>${event.venue.address.localized_address_display}#}
+    // {#                              </div>`#}
+    // {#                });#}
+    // {##}
+    // {#                marker.addListener('click', function() {#}
+    // {#                    if (activeInfoWindow) {#}
+    // {#                        activeInfoWindow.close();#}
+    // {#                    }#}
+    // {#                    infowindow.open(map, marker);#}
+    // {#                    activeInfoWindow = infowindow;#}
+    // {#                });#}
+    // {##}
+    // {#                google.maps.event.addListener(infowindow, 'closeclick', function() {#}
+    // {#                    activeInfoWindow = null;#}
+    // {#                });#}
+    // {#            });#}
+    // {#        })#}
+    // {#        .catch(error => console.error('Error:', error));#}
+    // {#}#}
+
+    async function fetchPlacesAndEvents(location) {
+    const placeType = document.getElementById('place-type').value;
+
+    try {
+        const response = await fetch(`/api/nearby-search/?location=${location.lat()},${location.lng()}&radius=1500&type=${placeType}`);
+        const data = await response.json();
+
+        clearMarkers();
+
+        // Handle Places
+        for (const place of data.places) {
+            const marker = new google.maps.Marker({
+                position: {
+                    lat: place.geometry.location.lat,
+                    lng: place.geometry.location.lng
+                },
+                map: map,
+                title: place.name,
+                icon: {
+                    url: place.icon,
+                    scaledSize: new google.maps.Size(20, 20),
+                }
+            });
+            markers.push(marker);
+
+            // Fetch additional place details
+            let phoneNumber = "Not Available";
+            let link = "Not Available";
+            try {
+                const detailsResponse = await fetch(`/api/place-details?placeId=${place.place_id}`);
+                const detailsData = await detailsResponse.json();
+                phoneNumber = detailsData.result.formatted_phone_number || "Not Available";
+                link = detailsData.result.website || "/nearby_search";
+                console.log(detailsData)
+            } catch (error) {
+                console.warn("Failed to fetch phone number for place:", place.name);
+            }
+
+            const infowindow = new google.maps.InfoWindow({
+                content: `<div class="info-card">
+                            <h2>${place.name}</h2>
+                            <div class="type">Type: ${place.types[0][0].toUpperCase() + place.types[0].substring(1)}</div>
+                            <div class="details">
+                              <div><i class="fas fa-star"></i><span class="rating">${place.rating ?? "Not Rated"} / 5.0</span></div>
+                              <div><i class="far fa-clock"></i>10:00 AM – 10:00 PM</div>
+                              <div><i class="fas fa-phone"></i>Contact no:  ${phoneNumber}</div>
+                              <div><a class="fas fa-phone" href=${link }> visit site</a></div>
+                            </div>
+                         </div>`
+            });
+
+            marker.addListener('click', function () {
+                if (activeInfoWindow) {
+                    activeInfoWindow.close();
+                }
+                infowindow.open(map, marker);
+                activeInfoWindow = infowindow;
+            });
+
+            google.maps.event.addListener(infowindow, 'closeclick', function () {
+                activeInfoWindow = null;
+            });
+        }
+
+        // Handle Events
+        for (const event of data.events) {
+            const marker = new google.maps.Marker({
+                position: {
+                    lat: event.venue.latitude,
+                    lng: event.venue.longitude
+                },
+                map: map,
+                title: event.name.text
+            });
+            markers.push(marker);
+
+            const infowindow = new google.maps.InfoWindow({
+                content: `<div class="infowindow-content">
+                            <strong>${event.name.text}</strong><br>${event.venue.address.localized_address_display}
+                          </div>`
+            });
+
+            marker.addListener('click', function () {
+                if (activeInfoWindow) {
+                    activeInfoWindow.close();
+                }
+                infowindow.open(map, marker);
+                activeInfoWindow = infowindow;
+            });
+
+            google.maps.event.addListener(infowindow, 'closeclick', function () {
+                activeInfoWindow = null;
+            });
+        }
+
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+        // 2. Fetch education events from PredictHQ
+        const lat = location.lat();
+        const lng = location.lng();
+
+    fetch(`/api/events/education/?lat=${lat}&lon=${lng}&radius=30km`)
+        .then(response => response.json())
+        .then(events => {
+            events.forEach(event => {
+                const marker = new google.maps.Marker({
+                    position: {
+                        lat: event.location[1],  // [lng, lat] from PredictHQ
+                        lng: event.location[0]
+                    },
+                    map: map,
+                    title: event.title
+                });
+
+                const infowindow = new google.maps.InfoWindow({
+                    content: `<div>
+                                <strong>${event.title}</strong><br>
+                                ${event.description || ''}<br>
+                                ${event.start} — ${event.end}
+                              </div>`
+                });
+
+                marker.addListener("click", () => {
+                    if (activeInfoWindow) activeInfoWindow.close();
+                    infowindow.open(map, marker);
+                    activeInfoWindow = infowindow;
+                });
+                markers.push(marker);
+            });
+        })
+        .catch(err => console.error("Event fetch error:", err));
+
+    function clearMarkers() {
+        markers.forEach(marker => marker.setMap(null));
+        markers = [];
+    }
+</script>
+</head>
+<body>
+
+    <h1>Educational Resource Finder</h1>
+
+
+    <input id="autocomplete" type="text" placeholder="Enter a location" style="width: 100%; padding: 10px; margin-bottom: 10px;">
+    <button id="search-button" style="width: 100%; padding: 10px; margin-bottom: 10px;">Search</button>
+    <select id="place-type" style="width: 100%; padding: 10px; margin-bottom: 10px;">
+        <option value="library">Library</option>
+        <option value="event">Event</option>
+        <option value="workshop">Workshop</option>
+    </select>
+    <div id="map" style="height: 500px; width: 100%;"></div>
+</body>
+</html>
+
