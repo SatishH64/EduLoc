@@ -31,7 +31,7 @@ class NearbySearchView(APIView):
         )
         places_response = requests.get(google_places_url)
         places_data = places_response.json() if places_response.status_code == 200 else {}
-
+    
         # --- PredictHQ API (API KEY ONLY) ---
         phq_api_key = settings.PREDICTHQ_API_KEY  # store in .env and settings.py
         phq_url = "https://api.predicthq.com/v1/events/"

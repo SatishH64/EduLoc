@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Educational Resource Finder</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+        .container-fluid {
+            height: 100%;
+            padding: 0;
+        }
+        #map {
+            height: 70vh;
+            width: 100%;
+        }
+        .sidebar {
+            height: 30vh;
+            overflow-y: auto;
+            padding: 15px;
+            background-color: #f8f9fa;
+        }
+        .resource-item {
+            border-bottom: 1px solid #ddd;
+            padding: 10px 0;
+        }
+        .badge {
+            margin-right: 5px;
+        }
+        #search-container {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 5;
+            background-color: #fff;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            width: 300px;
+        }
+        #filter-container {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 5;
+            background-color: #fff;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <div id="map"></div>
+                <div id="search-container">
+                    <div class="input-group mb-3">
+                        <input type="text" id="location-search" class="form-control" placeholder="Search for a location">
+                        <button class="btn btn-primary" id="search-button">Search</button>
+                    </div>
+                </div>
+                <div id="filter-container">
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" id="library-filter" checked>
+                        <label class="form-check-label" for="library-filter">Libraries</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" id="event-filter" checked>
+                        <label class="form-check-label" for="event-filter">Events</label>
+                    </div>
+                    <select class="form-select form-select-sm" id="radius-select">
+                        <option value="1500">1.5km</option>
+                        <option value="5000">5km</option>
+                        <option value="10000" selected>10km</option>
+                        <option value="15000">15km</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-12 sidebar">
+                <ul class="nav nav-tabs" id="resourceTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="libraries-tab" data-bs-toggle="tab" data-bs-target="#libraries" type="button" role="tab" aria-controls="libraries" aria-selected="true">Libraries</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="events-tab" data-bs-toggle="tab" data-bs-target="#events" type="button" role="tab" aria-controls="events" aria-selected="false">Events</button>
+                    </li>
+                </ul>
+                <div class="tab-content pt-3" id="resourceTabsContent">
+                    <div class="tab-pane fade show active" id="libraries" role="tabpanel" aria-labelledby="libraries-tab">
+                        <div id="libraries-list">Loading...</div>
+                    </div>
+                    <div class="tab-pane fade" id="events" role="tabpanel" aria-labelledby="events-tab">
+                        <div id="events-list">Loading...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let map;
+        let markers = [];
+        let currentInfoWindow = null;
+        let currentPosition = null;
+
+        function initMap() {
+            // Default center (can be anywhere, user will search or use location)
+            const defaultCenter = { lat: 37.7749, lng: -122.4194 }; // San Francisco
+
+            map = new google.maps.Map(document.getElementById("map"), {
+                center: defaultCenter,
+                zoom: 12,
+                mapTypeControl: true,
+                fullscreenControl: true,
+            });
+
+            // Try to get user location
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const userLocation = {
+                            lat: position.coords.latitude,
+                            lng: position.coords.longitude
+                        };
+                        map.setCenter(userLocation);
+                        setCurrentPosition(userLocation);
+                    },
+                    () => {
+                        console.log("Error: The Geolocation service failed.");
+                    }
+                );
+            }
+
+            // Allow clicking on map to place marker
+            map.addListener("click", (event) => {
+                setCurrentPosition({
+                    lat: event.latLng.lat(),
+                    lng: event.latLng.lng()
+                });
+            });
+
+            // Search button click handler
+            document.getElementById("search-button").addEventListener("click", () => {
+                const searchText = document.getElementById("location-search").value;
+                if (searchText.trim() === "") return;
+
+                const geocoder = new google.maps.Geocoder();
+                geocoder.geocode({ address: searchText }, (results, status) => {
+                    if (status === "OK" && results[0]) {
+                        const location = results[0].geometry.location;
+                        map.setCenter(location);
+                        setCurrentPosition({
+                            lat: location.lat(),
+                            lng: location.lng()
+                        });
+                    } else {
+                        alert("Location not found. Please try a different search term.");
+                    }
+                });
+            });
+
+            // Filter change events
+            document.getElementById("library-filter").addEventListener("change", fetchResources);
+            document.getElementById("event-filter").addEventListener("change", fetchResources);
+            document.getElementById("radius-select").addEventListener("change", fetchResources);
+        }
+
+        function setCurrentPosition(position) {
+            // Clear all existing markers
+            clearMarkers();
+
+            // Create marker at clicked position
+            currentPosition = position;
+            
+            const marker = new google.maps.Marker({
+                position: position,
+                map: map,
+                icon: {
+                    url: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png"
+                },
+                animation: google.maps.Animation.DROP,
+                title: "Selected Location"
+            });
+            
+            markers.push(marker);
+            
+            // Fetch resources around this position
+            fetchResources();
+        }
+
+        function clearMarkers() {
+            for (let marker of markers) {
+                marker.setMap(null);
+            }
+            markers = [];
+        }
+
+        function fetchResources() {
+            if (!currentPosition) return;
+
+            const showLibraries = document.getElementById("library-filter").checked;
+            const showEvents = document.getElementById("event-filter").checked;
+            const radius = document.getElementById("radius-select").value;
+
+            document.getElementById("libraries-list").innerHTML = "Loading...";
+            document.getElementById("events-list").innerHTML = "Loading...";
+
+            // API call for nearby resources
+            const location = `${currentPosition.lat},${currentPosition.lng}`;
+            
+            fetch(`/api/nearby-search/?location=${location}&radius=${radius}&type=library`)
+                .then(response => response.json())
+                .then(data => {
+                    if (showLibraries) {
+                        displayLibraries(data.places);
+                    } else {
+                        document.getElementById("libraries-list").innerHTML = "<p>Libraries filter is turned off</p>";
+                    }
+                    
+                    if (showEvents) {
+                        displayEvents(data.events);
+                    } else {
+                        document.getElementById("events-list").innerHTML = "<p>Events filter is turned off</p>";
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching resources:', error);
+                    document.getElementById("libraries-list").innerHTML = "<p>Error loading libraries</p>";
+                    document.getElementById("events-list").innerHTML = "<p>Error loading events</p>";
+                });
+        }
+
+        function displayLibraries(places) {
+            if (!places || places.length === 0) {
+                document.getElementById("libraries-list").innerHTML = "<p>No libraries found in this area</p>";
+                return;
+            }
+
+            let html = '';
+            
+            places.forEach(place => {
+                // Add marker to map
+                if (document.getElementById("library-filter").checked) {
+                    const marker = new google.maps.Marker({
+                        position: {
+                            lat: place.geometry.location.lat,
+                            lng: place.geometry.location.lng
+                        },
+                        map: map,
+                        title: place.name,
+                        icon: {
+                            url: "http://maps.google.com/mapfiles/ms/icons/green-dot.png"
+                        }
+                    });
+
+                    const infoWindow = new google.maps.InfoWindow({
+                        content: `<div><h5>${place.name}</h5><p>${place.vicinity}</p></div>`
+                    });
+
+                    marker.addListener("click", () => {
+                        if (currentInfoWindow) {
+                            currentInfoWindow.close();
+                        }
+                        infoWindow.open(map, marker);
+                        currentInfoWindow = infoWindow;
+                        
+                        // Get more details
+                        fetch(`/api/place-details/?placeId=${place.place_id}`)
+                            .then(response => response.json())
+                            .then(data => {
+                                const result = data.result || {};
+                                let content = `<div><h5>${place.name}</h5><p>${place.vicinity}</p>`;
+                                
+                                if (result.formatted_phone_number) {
+                                    content += `<p>Phone: ${result.formatted_phone_number}</p>`;
+                                }
+                                
+                                if (result.website) {
+                                    content += `<p><a href="${result.website}" target="_blank">Website</a></p>`;
+                                }
+                                
+                                content += '</div>';
+                                infoWindow.setContent(content);
+                            });
+                    });
+
+                    markers.push(marker);
+                }
+
+                // Add to list
+                html += `
+                <div class="resource-item">
+                    <h5>${place.name}</h5>
+                    <p>${place.vicinity}</p>
+                    <div>
+                        <span class="badge bg-info">${place.rating ? place.rating + '★' : 'No rating'}</span>
+                        ${place.open_now ? '<span class="badge bg-success">Open Now</span>' : ''}
+                    </div>
+                </div>`;
+            });
+
+            document.getElementById("libraries-list").innerHTML = html;
+        }
+
+        function displayEvents(events) {
+            if (!events || events.length === 0) {
+                document.getElementById("events-list").innerHTML = "<p>No educational events found in this area</p>";
+                return;
+            }
+
+            let html = '';
+            
+            events.forEach(event => {
+                // Add marker to map
+                if (document.getElementById("event-filter").checked && event.location) {
+                    const marker = new google.maps.Marker({
+                        position: {
+                            lat: event.location.latitude,
+                            lng: event.location.longitude
+                        },
+                        map: map,
+                        title: event.title,
+                        icon: {
+                            url: "http://maps.google.com/mapfiles/ms/icons/red-dot.png"
+                        }
+                    });
+
+                    const startDate = new Date(event.start).toLocaleDateString();
+                    const endDate = new Date(event.end).toLocaleDateString();
+
+                    const infoWindow = new google.maps.InfoWindow({
+                        content: `<div>
+                            <h5>${event.title}</h5>
+                            <p>From: ${startDate} to ${endDate}</p>
+                            <p>Category: ${event.category}</p>
+                            ${event.description ? `<p>${event.description}</p>` : ''}
+                        </div>`
+                    });
+
+                    marker.addListener("click", () => {
+                        if (currentInfoWindow) {
+                            currentInfoWindow.close();
+                        }
+                        infoWindow.open(map, marker);
+                        currentInfoWindow = infoWindow;
+                    });
+
+                    markers.push(marker);
+                }
+
+                // Format dates
+                const startDate = new Date(event.start).toLocaleDateString();
+                const endDate = new Date(event.end).toLocaleDateString();
+
+                // Add to list
+                html += `
+                <div class="resource-item">
+                    <h5>${event.title}</h5>
+                    <p>From: ${startDate} to ${endDate}</p>
+                    <div>
+                        <span class="badge bg-primary">${event.category}</span>
+                    </div>
+                    ${event.description ? `<p class="mt-2">${event.description.substring(0, 100)}${event.description.length > 100 ? '...' : ''}</p>` : ''}
+                </div>`;
+            });
+
+            document.getElementById("events-list").innerHTML = html;
+        }
+
+        // Allow pressing Enter in the search box
+        document.getElementById("location-search").addEventListener("keyup", function(event) {
+            if (event.key === "Enter") {
+                document.getElementById("search-button").click();
+            }
+        });
+    </script>
+    <script async defer
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCidnDGbdamsCKo2-6oQthbnZvR5iocszY&callback=initMap">
+    </script>
+</body>
+</html>
