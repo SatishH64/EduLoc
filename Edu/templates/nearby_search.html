@@ -4,72 +4,24 @@
 <head>
     <title>Nearby Search</title>
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCidnDGbdamsCKo2-6oQthbnZvR5iocszY&libraries=places&callback=initMap" async defer></script>
-    <style>
-        .infowindow-content{
-            background: whitesmoke;
-            height: 200px;
-            width: 200px;
-        }
-
-
-    .info-card {
-      background: white;
-      padding: 2rem;
-      border-radius: 20px;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.08);
-      max-width: 360px;
-      width: 100%;
-      text-align: center;
-      transition: 0.3s ease;
-    }
-
-    .info-card:hover {
-      transform: translateY(-6px);
-    }
-
-    .info-card h2 {
-      font-size: 1.8rem;
-      margin-bottom: 0.25rem;
-      color: #1f2937;
-    }
-
-    .type {
-      font-size: 1rem;
-      color: #6b7280;
-      margin-bottom: 1rem;
-    }
-
-    .details {
-      text-align: left;
-      margin-top: 1.5rem;
-    }
-
-    .details div {
-      display: flex;
-      align-items: center;
-      margin: 0.5rem 0;
-      font-size: 0.95rem;
-      color: #374151;
-    }
-
-    .details div i {
-      width: 24px;
-      margin-right: 10px;
-      color: #4f46e5;
-    }
-
-    .rating {
-      color: #facc15;
-      font-size: 1.1rem;
-    }
-
-    @media (max-width: 400px) {
-      .info-card {
-        padding: 1.5rem;
-      }
-    }
-    </style>
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <style>
+        .info-card {
+          background: white;
+          padding: 0;
+          border-radius: 20px;
+          box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+          max-width: 360px;
+          width: 100%;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          margin: 0;
+          text-align: center;
+          transition: 0.3s ease;
+          background: #218838;
+        }
+    </style>
     <script>
     let map;
     let autocomplete;
@@ -161,94 +113,9 @@
     }
 
 
-    // {#function fetchPlacesAndEvents(location) {#}
-    // {#    const placeType = document.getElementById('place-type').value;#}
-    // {#    fetch(`/api/nearby-search/?location=${location.lat()},${location.lng()}&radius=1500&type=${placeType}`)#}
-    // {#        .then(response => response.json())#}
-    // {#        .then(data => {#}
-    // {#            clearMarkers();#}
-    // {#            data.places.forEach(place => {#}
-    // {#                const marker = new google.maps.Marker({#}
-    // {#                    position: { lat: place.geometry.location.lat, lng: place.geometry.location.lng },#}
-    // {#                    map: map,#}
-    // {#                    title: place.name,#}
-    // {#                    icon: {#}
-    // {#                        url: place.icon,#}
-    // {#                        scaledSize: new google.maps.Size(20, 20),#}
-    // {#                    }#}
-    // {##}
-    // {#                });#}
-    // {#                markers.push(marker);#}
-    // {##}
-    // {##}
-    //                 {#console.log(place)#}
-    // {#                const infowindow = new google.maps.InfoWindow({#}
-    // {#                    content:`<div class="info-card">#}
-    // {#                                <h2>${place.name}</h2>#}
-    // {#                                <div class="type">Type: ${place.types[0][0].toUpperCase() + place.types[0].substring(1)}</div>#}
-    // {##}
-    // {#                                <div class="details">#}
-    // {#                                  <div><i class="fas fa-star"></i><span class="rating">${place.rating ?? "Not Rated"} / 5.0</span></div>#}
-    // {#                                  <div><i class="far fa-clock"></i>10:00 AM – 10:00 PM</div>#}
-    // {##}
-    // {#                                  <div><i class="fas fa-phone"></i>${#}
-    // {#                                        fetch(`https://maps.googleapis.com/maps/api/place/details/json?place_id=${place.place_id}&fields=name,formatted_phone_number,international_phone_number,website&key=AIzaSyCidnDGbdamsCKo2-6oQthbnZvR5iocszY`)#}
-    // {#                                            .then(response => response.json())#}
-    // {#                                            .then(data => {#}
-    // {#                                                const phoneNumber = data.result.formatted_phone_number;#}
-    // {#                                                return phoneNumber ? phoneNumber : "Not Available";#}
-    // {#                                            })#}
-    // {#                                    }</div>#}
-    // {#                                </div>#}
-    // {#                             </div>`#}
-    // {#                });#}
-    // {##}
-    // {#                marker.addListener('click', function() {#}
-    // {#                    if (activeInfoWindow) {#}
-    // {#                        activeInfoWindow.close();#}
-    // {#                    }#}
-    // {#                    infowindow.open(map, marker);#}
-    // {#                    activeInfoWindow = infowindow;#}
-    // {#                });#}
-    // {##}
-    // {#                google.maps.event.addListener(infowindow, 'closeclick', function() {#}
-    // {#                    activeInfoWindow = null;#}
-    // {#                });#}
-    // {#            });#}
-    // {##}
-    // {##}
-    // {##}
-    // {#            data.events.forEach(event => {#}
-    // {#                const marker = new google.maps.Marker({#}
-    // {#                    position: { lat: event.venue.latitude, lng: event.venue.longitude },#}
-    // {#                    map: map,#}
-    // {#                    title: event.name.text#}
-    // {#                });#}
-    // {#                markers.push(marker);#}
-    // {##}
-    // {#                const infowindow = new google.maps.InfoWindow({#}
-    // {#                    content: `<div class="infowindow-content">#}
-    // {#                                <strong>${event.name.text}</strong><br>${event.venue.address.localized_address_display}#}
-    // {#                              </div>`#}
-    // {#                });#}
-    // {##}
-    // {#                marker.addListener('click', function() {#}
-    // {#                    if (activeInfoWindow) {#}
-    // {#                        activeInfoWindow.close();#}
-    // {#                    }#}
-    // {#                    infowindow.open(map, marker);#}
-    // {#                    activeInfoWindow = infowindow;#}
-    // {#                });#}
-    // {##}
-    // {#                google.maps.event.addListener(infowindow, 'closeclick', function() {#}
-    // {#                    activeInfoWindow = null;#}
-    // {#                });#}
-    // {#            });#}
-    // {#        })#}
-    // {#        .catch(error => console.error('Error:', error));#}
-    // {#}#}
-
     async function fetchPlacesAndEvents(location) {
+
+        console.log(location);
     const placeType = document.getElementById('place-type').value;
 
     try {
@@ -306,6 +173,7 @@
                 infowindow.open(map, marker);
                 activeInfoWindow = infowindow;
             });
+
 
             google.maps.event.addListener(infowindow, 'closeclick', function () {
                 activeInfoWindow = null;

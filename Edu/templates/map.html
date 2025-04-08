@@ -4,12 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Educational Resource Finder</title>
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body, html {
             height: 100%;
             margin: 0;
             font-family: Arial, sans-serif;
+            overflow-x: hidden; /* Prevent horizontal scrolling */
         }
         .container-fluid {
             height: 100%;
@@ -32,33 +34,78 @@
         .badge {
             margin-right: 5px;
         }
-        #search-container {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            z-index: 5;
-            background-color: #fff;
-            padding: 10px;
-            border-radius: 5px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-            width: 300px;
-        }
+       #search-container {
+        position: fixed;
+        top: 70px; /* Adjusted to sit below the navbar */
+        left: 10px;
+        z-index: 1040; /* Lower than the navbar */
+        background-color: #fff;
+        padding: 10px;
+        border-radius: 5px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        width: 300px;
+        max-width: calc(100% - 20px);
+    }
         #filter-container {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            z-index: 5;
-            background-color: #fff;
-            padding: 10px;
-            border-radius: 5px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-        }
+        position: fixed;
+        top: 70px; /* Adjusted to sit below the navbar */
+        right: 10px;
+        z-index: 1040; /* Lower than the navbar */
+        background-color: #fff;
+        padding: 10px;
+        border-radius: 5px;
+         max-width: calc(100% - 20px);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    }
+    .navbar {
+    z-index: 1050; /* Ensures it stays above other elements */
+    padding: 15px 20px; /* Adds padding to the navbar */
+}
     </style>
 </head>
 <body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
     <div class="container-fluid">
+        <!-- Logo -->
+        <a class="navbar-brand" href="#">
+            Educational Resource Finder
+        </a>
+
+        <!-- Toggler for mobile view -->
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <!-- Navbar links -->
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item">
+                    <a class="nav-link active" aria-current="page" href="#">Home</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">About Us</a>
+                </li>
+            </ul>
+
+            <!-- Search bar -->
+            <form class="d-flex me-3">
+                <input class="form-control me-2" type="search" placeholder="Search books" aria-label="Search">
+                <button class="btn btn-outline-success" type="submit">Search</button>
+            </form>
+
+            <!-- Profile button -->
+            <div class="ms-auto">
+                <button class="btn btn-light rounded-circle" style="width: 40px; height: 40px;">
+                    <img src="https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png" alt="Profile" class="rounded-circle" style="width: 100%; height: 100%; object-fit: cover;">
+                </button>
+            </div>
+        </div>
+    </div>
+</nav>
+    <div class="container-fluid">
+
         <div class="row">
-            <div class="col-12">
+            <div class="col-12 ">
                 <div id="map"></div>
                 <div id="search-container">
                     <div class="input-group mb-3">
@@ -171,7 +218,7 @@
 
             // Filter change events
             document.getElementById("library-filter").addEventListener("change", fetchResources);
-            document.getElementById("event-filter").addEventListener("change", fetchResources);
+            document.getElementById("event-filter").addEventListener("change", fetchEventResources);
             document.getElementById("radius-select").addEventListener("change", fetchResources);
         }
 
@@ -205,28 +252,105 @@
             markers = [];
         }
 
+        {#function fetchResources() {#}
+        {#    if (!currentPosition) return;#}
+        {##}
+        {#    const showLibraries = document.getElementById("library-filter").checked;#}
+        {#    const showEvents = document.getElementById("event-filter").checked;#}
+        {#    const radius = document.getElementById("radius-select").value;#}
+        {##}
+        {#    document.getElementById("libraries-list").innerHTML = "Loading...";#}
+        {#    document.getElementById("events-list").innerHTML = "Loading...";#}
+        {##}
+        {#    // API call for nearby resources#}
+        {#    const location = `${currentPosition.lat},${currentPosition.lng}`;#}
+        {#    #}
+        {#    fetch(`/api/nearby-search/?location=${location}&radius=${radius}&type=${showLibraries ? 'library' : 'event'}`)#}
+        {#        .then(response => response.json())#}
+        {#        .then(data => {#}
+        {#            if (showLibraries) {#}
+        {#                displayLibraries(data.places);#}
+        {#            } else {#}
+        {#                document.getElementById("libraries-list").innerHTML = "<p>Libraries filter is turned off</p>";#}
+        {#            }#}
+        {#            #}
+        {#            if (showEvents) {#}
+        {#                displayEvents(data.events);#}
+        {#            } else {#}
+        {#                document.getElementById("events-list").innerHTML = "<p>Events filter is turned off</p>";#}
+        {#            }#}
+        {#        })#}
+        {#        .catch(error => {#}
+        {#            console.error('Error fetching resources:', error);#}
+        {#            document.getElementById("libraries-list").innerHTML = "<p>Error loading libraries</p>";#}
+        {#            document.getElementById("events-list").innerHTML = "<p>Error loading events</p>";#}
+        {#        });#}
+        {# } #}
         function fetchResources() {
+
             if (!currentPosition) return;
 
             const showLibraries = document.getElementById("library-filter").checked;
             const showEvents = document.getElementById("event-filter").checked;
             const radius = document.getElementById("radius-select").value;
+            const startDate = new Date().toISOString().split('T')[0]; // Current date
+            const endDate   = new Date().toDateString().split('T')[0];
+
+            document.getElementById("libraries-list").innerHTML = "Loading...";
+            document.getElementById("events-list").innerHTML = "Loading...";
+
+            const location = `${currentPosition.lat},${currentPosition.lng}`;
+
+            if (showLibraries) {
+                // Fetch libraries
+                fetch(`/api/nearby-search/?location=${location}&radius=${radius}&type=library`)
+                    .then(response => response.json())
+                    .then(data => {
+                        displayLibraries(data.places);
+                    })
+                    .catch(error => {
+                        console.error('Error fetching libraries:', error);
+                        document.getElementById("libraries-list").innerHTML = "<p>Error loading libraries</p>";
+                    });
+            } else {
+                document.getElementById("libraries-list").innerHTML = "<p>Libraries filter is turned off</p>";
+            }
+
+            if (showEvents) {
+                // Fetch events
+                fetch(`/api/events/education/?lat=${location[0]}&lon=${location[1]}&radius=${radius}&q=education&start=${startDate}&end=${endDate}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        displayEvents(data);
+                        console.log(data);
+                    })
+                    .catch(error => {
+                        console.error('Error fetching events:', error);
+                        document.getElementById("events-list").innerHTML = "<p>Error loading events</p>";
+                    });
+            } else {
+                document.getElementById("events-list").innerHTML = "<p>Events filter is turned off</p>";
+            }
+        }
+
+        function fetchEventResources() {
+            if (!currentPosition) return;
+
+            {#const showLibraries = document.getElementById("library-filter").checked;#}
+            const showEvents = document.getElementById("event-filter").checked;
+            const radius = document.getElementById("radius-select").value;
+            const startDate = new Date().toISOString().split('T')[0]; // Current date
+            const endDate = new Date().toDateString().split('T')[0];
 
             document.getElementById("libraries-list").innerHTML = "Loading...";
             document.getElementById("events-list").innerHTML = "Loading...";
 
             // API call for nearby resources
             const location = `${currentPosition.lat},${currentPosition.lng}`;
-            
-            fetch(`/api/nearby-search/?location=${location}&radius=${radius}&type=library`)
+
+            fetch(`/api/events/education/?lat=${location[0]}&lon=${location[1]}${location}&radius=${radius}&q=education&start=${startDate}&end=${endDate}`)
                 .then(response => response.json())
                 .then(data => {
-                    if (showLibraries) {
-                        displayLibraries(data.places);
-                    } else {
-                        document.getElementById("libraries-list").innerHTML = "<p>Libraries filter is turned off</p>";
-                    }
-                    
                     if (showEvents) {
                         displayEvents(data.events);
                     } else {
@@ -313,6 +437,7 @@
         }
 
         function displayEvents(events) {
+            console.log(events[0].location);
             if (!events || events.length === 0) {
                 document.getElementById("events-list").innerHTML = "<p>No educational events found in this area</p>";
                 return;
@@ -325,8 +450,8 @@
                 if (document.getElementById("event-filter").checked && event.location) {
                     const marker = new google.maps.Marker({
                         position: {
-                            lat: event.location.latitude,
-                            lng: event.location.longitude
+                            lat: event.location[1],
+                            lng: event.location[0]
                         },
                         map: map,
                         title: event.title,
