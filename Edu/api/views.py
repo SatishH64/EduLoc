@@ -1,13 +1,52 @@
-import requests
 from django.conf import settings
-from django.core.cache import cache
 from django.http import JsonResponse
-from rest_framework import status
-from rest_framework.response import Response
-from rest_framework.views import APIView
 from django.views.decorators.csrf import csrf_exempt
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from django.core.cache import cache
+import requests
+
 
 class NearbySearchView(APIView):
+    # @staticmethod
+    # def fetch_all_places(location, radius, place_type, api_key, limit=30):
+    #     cache_key = f"places:{location}:{radius}:{place_type}:{limit}"
+    #     cached_data = cache.get(cache_key)
+    #     if cached_data:
+    #         return cached_data
+    #
+    #     places = []
+    #     url = "https://maps.googleapis.com/maps/api/place/nearbysearch/json"
+    #     params = {
+    #         "location": location,
+    #         "radius": radius,
+    #         "type": place_type,
+    #         "key": api_key
+    #     }
+    #
+    #     while len(places) < limit:
+    #         response = requests.get(url, params=params)
+    #         data = response.json()
+    #
+    #         if "results" in data:
+    #             places.extend(data["results"])
+    #
+    #         if len(places) >= limit:
+    #             places = places[:limit]
+    #             break
+    #
+    #         next_page_token = data.get("next_page_token")
+    #         if not next_page_token:
+    #             break
+    #
+    #         import time
+    #         time.sleep(2)
+    #         params["pagetoken"] = next_page_token
+    #
+    #     cache.set(cache_key, places, timeout=3600)  # Cache for 1 hour
+    #     return places
+
     def get(self, request, *args, **kwargs):
         location = request.query_params.get('location')
         radius = request.query_params.get('radius', 1500)
@@ -16,7 +55,7 @@ class NearbySearchView(APIView):
         # Additional filters
         query = request.query_params.get('q')  # event name
         start_date = request.query_params.get('start_date')  # YYYY-MM-DD
-        end_date = request.query_params.get('end_date')      # YYYY-MM-DD
+        end_date = request.query_params.get('end_date')  # YYYY-MM-DD
 
         if not location:
             return Response({"error": "Location parameter is required"}, status=status.HTTP_400_BAD_REQUEST)
@@ -31,7 +70,8 @@ class NearbySearchView(APIView):
         )
         places_response = requests.get(google_places_url)
         places_data = places_response.json() if places_response.status_code == 200 else {}
-    
+        print("len", len(places_data['results']))
+
         # --- PredictHQ API (API KEY ONLY) ---
         phq_api_key = settings.PREDICTHQ_API_KEY  # store in .env and settings.py
         phq_url = "https://api.predicthq.com/v1/events/"
@@ -69,12 +109,13 @@ class NearbySearchView(APIView):
                         "longitude": loc[0]
                     }
                 })
-
+        # print(places_data)
+        # places_data['radius'] = radius
+        print(places_data.get('results', []))
         return Response({
             "places": places_data.get('results', []),
             "events": formatted_events
         }, status=status.HTTP_200_OK)
-
 
 
 @csrf_exempt
@@ -91,18 +132,19 @@ def place_details(request):
 
 
 class BookSearchView(APIView):
-    def get(self,request):
+    def get(self, request):
         title = request.query_params.get('title')
         author = request.query_params.get('author')
 
         if not author and not title:
-            return Response({"Error":"Please provide author or title of the book."},status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "Please provide author or title of the book."},
+                            status=status.HTTP_400_BAD_REQUEST)
 
-            #Generate cache key
+        # Generate cache key
         cache_key = f"book_search:{title}:{author}"
         cached_data = cache.get(cache_key)
         if cached_data:
-            return Response(cached_data)
+            return Response({"books": cached_data})
 
         base_url = "https://openlibrary.org/search.json"
         params = {}
@@ -121,17 +163,64 @@ class BookSearchView(APIView):
         books = []
         for item in data.get("docs", []):
             books.append({
-                "title": item.get("title"),
-                "author_name": item.get("author_name", []),
-                "OL key":item.get("key"),
-                "first_publish_year": item.get("first_publish_year",None),
-                "isbn": item.get("isbn", [])[0] if item.get("isbn") else None,
+                "title": item.get("title", "Untitled"),
+                "author": ", ".join(item.get("author_name", ["Unknown Author"])),
+                "cover_url": f"http://covers.openlibrary.org/b/isbn/{item['isbn'][0]}-L.jpg" if item.get(
+                    "isbn") else None,
+                "first_publish_year": item.get("first_publish_year", None),
+                "key": item.get("key", None)
             })
 
-        # Cache the filtered result for 1 hour (3600 seconds)
+        # Cache the result for 1 hour
         cache.set(cache_key, books, timeout=3600)
 
-        return Response(books)
+        return Response({"books": books})
+
+
+# class BookSearchView(APIView):
+#     def get(self, request):
+#         title = request.query_params.get('title')
+#         author = request.query_params.get('author')
+#
+#         if not author and not title:
+#             return Response({"Error": "Please provide author or title of the book."},
+#                             status=status.HTTP_400_BAD_REQUEST)
+#
+#             # Generate cache key
+#         cache_key = f"book_search:{title}:{author}"
+#         cached_data = cache.get(cache_key)
+#         if cached_data:
+#             return Response(cached_data)
+#
+#         base_url = "https://openlibrary.org/search.json"
+#         params = {}
+#         if title:
+#             params['title'] = title
+#         if author:
+#             params['author'] = author
+#
+#         response = requests.get(base_url, params=params)
+#
+#         if response.status_code != 200:
+#             return Response({"error": "Failed to fetch data from OpenLibrary"},
+#                             status=response.status_code)
+#
+#         data = response.json()
+#         books = []
+#         for item in data.get("docs", []):
+#             books.append({
+#                 "title": item.get("title"),
+#                 "author_name": item.get("author_name", []),
+#                 "OL key": item.get("key"),
+#                 "first_publish_year": item.get("first_publish_year", None),
+#                 "isbn": item.get("isbn", [])[0] if item.get("isbn") else None,
+#             })
+#
+#         # Cache the filtered result for 1 hour (3600 seconds)
+#         cache.set(cache_key, books, timeout=3600)
+#
+#         return Response(books)
+
 
 class EducationEventSearchView(APIView):
     def get(self, request):
@@ -169,7 +258,8 @@ class EducationEventSearchView(APIView):
         response = requests.get("https://api.predicthq.com/v1/events/", headers=headers, params=params)
 
         if response.status_code != 200:
-            return Response({"error": "Failed to fetch events", "details": response.json()}, status=response.status_code)
+            return Response({"error": "Failed to fetch events", "details": response.json()},
+                            status=response.status_code)
 
         events = [
             {
