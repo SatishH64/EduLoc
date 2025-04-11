@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.http import JsonResponse
+from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -111,7 +112,7 @@ class NearbySearchView(APIView):
                 })
         # print(places_data)
         # places_data['radius'] = radius
-        print(places_data.get('results', []))
+        # print(places_data.get('results', []))
         return Response({
             "places": places_data.get('results', []),
             "events": formatted_events
@@ -133,9 +134,11 @@ def place_details(request):
 
 class BookSearchView(APIView):
     def get(self, request):
+
+        print(request)
         title = request.query_params.get('title')
         author = request.query_params.get('author')
-
+        # print(request.query_params.get('search-books'))
         if not author and not title:
             return Response({"error": "Please provide author or title of the book."},
                             status=status.HTTP_400_BAD_REQUEST)
@@ -165,8 +168,8 @@ class BookSearchView(APIView):
             books.append({
                 "title": item.get("title", "Untitled"),
                 "author": ", ".join(item.get("author_name", ["Unknown Author"])),
-                "cover_url": f"http://covers.openlibrary.org/b/isbn/{item['isbn'][0]}-L.jpg" if item.get(
-                    "isbn") else None,
+                "cover_url": f"http://covers.openlibrary.org/b/id/{item['cover_i']}-L.jpg" if item.get(
+                    "cover_i") else None,
                 "first_publish_year": item.get("first_publish_year", None),
                 "key": item.get("key", None)
             })

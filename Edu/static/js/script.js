@@ -6,12 +6,12 @@ let currentPosition = null;
 function initMap() {
     // Default center (can be anywhere, user will search or use location)
     const defaultCenter = {lat: 37.7749, lng: -122.4194}; // San Francisco
-    // let radius = document.getElementById("radius-select").value;
-    // console.log(radius)
+
     map = new google.maps.Map(document.getElementById("map"), {
         center: defaultCenter,
         zoom: 12,
-        mapTypeControl: true,
+        // mapTypeControl: true,
+        disableDefaultUI: true,
         fullscreenControl: true,
     });
 
@@ -25,7 +25,6 @@ function initMap() {
                 };
                 map.setCenter(userLocation);
                 setCurrentPosition(userLocation);
-                addCircleToMap(userLocation, 1500);
             },
             () => {
                 console.log("Error: The Geolocation service failed.");
@@ -38,12 +37,6 @@ function initMap() {
         setCurrentPosition({
             lat: event.latLng.lat(),
             lng: event.latLng.lng()
-        });
-        fetchResource().then(() => {
-            addCircleToMap({
-                lat: event.latLng.lat(),
-                lng: event.latLng.lng()
-            }, 1500);
         });
     });
 
@@ -61,10 +54,6 @@ function initMap() {
                     lat: location.lat(),
                     lng: location.lng()
                 });
-                addCircleToMap({
-                    lat: location.lat(),
-                    lng: location.lng()
-                }, 1500);
             } else {
                 alert("Location not found. Please try a different search term.");
             }
@@ -105,7 +94,8 @@ function addCircleToMap(center, radius) {
 function setCurrentPosition(position) {
     // Clear all existing markers
     clearMarkers();
-
+    const radius = document.getElementById("radius-select").value;
+    console.log(radius);
     // Create marker at clicked position
     currentPosition = position;
 
@@ -123,6 +113,7 @@ function setCurrentPosition(position) {
 
     // Fetch resources around this position
     fetchResources();
+    addCircleToMap(position, radius)
 }
 
 function clearMarkers() {
@@ -327,90 +318,3 @@ document.getElementById("location-search").addEventListener("keyup", function (e
         document.getElementById("search-button").click();
     }
 });
-
-document.addEventListener("DOMContentLoaded", () => {
-    const form = document.getElementById("book-search-form");
-    if (form) {
-        form.addEventListener("submit", handleBookSearch);
-    }
-});
-
-function handleBookSearch(event) {
-    event.preventDefault();
-    const input = document.getElementById("book-search-input");
-    if (!input) return;
-
-    const query = input.value.trim();
-    if (query) {
-        fetchBookCovers(query);
-    }
-}
-
-function fetchBookCovers(query) {
-    const params = new URLSearchParams();
-
-    // Support "title:Harry Potter" or "author:J.K. Rowling" or generic
-    const parts = query.split(":");
-    if (parts.length >= 2) {
-        const key = parts[0].trim().toLowerCase();
-        const value = parts.slice(1).join(":").trim();
-
-        if (key === "title" || key === "author") {
-            params.append(key, value);
-        } else {
-            params.append("title", query);
-        }
-    } else {
-        params.append("title", query); // fallback
-    }
-
-    fetch(`/api/search-books/?${params.toString()}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data?.books) {
-                displayBookCovers(data.books);
-            } else {
-                throw new Error("Invalid response format");
-            }
-        })
-        .catch(error => {
-            console.error("Error fetching book covers:", error);
-            const container = document.getElementById("book-covers-container");
-            if (container) {
-                container.innerHTML = "<p>Error loading book covers</p>";
-            }
-        });
-}
-
-function displayBookCovers(books) {
-    const container = document.getElementById("book-covers-container");
-    if (!container) return;
-
-    container.innerHTML = "";
-
-    if (!books.length) {
-        container.innerHTML = "<p>No books found</p>";
-        return;
-    }
-
-    books.forEach(book => {
-        const card = document.createElement("div");
-        card.className = "col-md-3 mb-3";
-
-        const title = book.title || "Untitled";
-        const author = book.author || "Unknown Author";
-        const coverUrl = book.cover_url || "https://via.placeholder.com/150x200?text=No+Cover";
-
-        card.innerHTML = `
-            <div class="card h-100">
-                <img src="${coverUrl}" class="card-img-top" alt="${title}">
-                <div class="card-body">
-                    <h6 class="card-title">${escapeHtml(title)}</h6>
-                    <p class="card-text"><small>${escapeHtml(author)}</small></p>
-                </div>
-            </div>
-        `;
-
-        container.appendChild(card);
-    });
-}
