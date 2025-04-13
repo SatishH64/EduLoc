@@ -69,6 +69,19 @@ function initMap() {
 let searchCircle = null;
 
 function addCircleToMap(center, radius) {
+    // Ensure radius is a number
+    radius = parseFloat(radius);
+    if (isNaN(radius)) {
+        console.error("Invalid radius value:", radius);
+        return;
+    }
+
+    // Ensure center is a valid LatLng object
+    if (!center || typeof center.lat !== "number" || typeof center.lng !== "number") {
+        console.error("Invalid center value:", center);
+        return;
+    }
+
     // Clear any existing circle
     if (searchCircle) {
         searchCircle.setMap(null);
@@ -92,10 +105,21 @@ function addCircleToMap(center, radius) {
 
 
 function setCurrentPosition(position) {
+    // Ensure position is valid
+    if (!position || typeof position.lat !== "number" || typeof position.lng !== "number") {
+        console.error("Invalid position value:", position);
+        return;
+    }
+
     // Clear all existing markers
     clearMarkers();
-    const radius = document.getElementById("radius-select").value;
-    console.log(radius);
+
+    const radius = parseFloat(document.getElementById("radius-select").value);
+    if (isNaN(radius)) {
+        console.error("Invalid radius value:", radius);
+        return;
+    }
+
     // Create marker at clicked position
     currentPosition = position;
 
@@ -113,7 +137,7 @@ function setCurrentPosition(position) {
 
     // Fetch resources around this position
     fetchResources();
-    addCircleToMap(position, radius)
+    addCircleToMap(position, radius);
 }
 
 function clearMarkers() {
@@ -131,7 +155,7 @@ function fetchResources() {
     const showEvents = document.getElementById("event-filter").checked;
     const radius = document.getElementById("radius-select").value;
     const startDate = new Date().toISOString().split('T')[0]; // Current date
-    const endDate = new Date(new Date().setDate(new Date().getDate() + 1)).toISOString().split('T')[0];
+    let endDate = null
 
     document.getElementById("libraries-list").innerHTML = "Loading...";
     document.getElementById("events-list").innerHTML = "Loading...";
@@ -153,10 +177,10 @@ function fetchResources() {
     } else {
         document.getElementById("libraries-list").innerHTML = "<p>Libraries filter is turned off</p>";
     }
-
+    console.log(startDate, endDate);
     if (showEvents) {
         // Fetch events
-        fetch(`/api/events/education/?lat=${location[0]}&lon=${location[1]}&radius=${radius}&q=education&start=${startDate}&end=${endDate}`)
+        fetch(`/api/events/education/?location=${location}&radius=${radius}&start=${startDate}&end=${endDate}`)
             .then(response => response.json())
             .then(data => {
                 displayEvents(data);
