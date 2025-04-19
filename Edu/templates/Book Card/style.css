@@ -1,0 +1,30 @@
+body{
+    display: flex;
+    background-color: gray;
+    justify-content: center;
+}
+.card {
+    width: 300px;
+    height: 350px;
+    background-color: whitesmoke;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    overflow: hidden;
+    transition: box-shadow 0.3s ease;
+}
+
+  .card:hover {
+    box-shadow: 0 8px 16px 0 rgba(0,0,0,0.2);
+  }
+  
+  .container {
+    padding: 2px 16px;
+  }
+
+  .card img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 8px 8px 0 0;
+}
