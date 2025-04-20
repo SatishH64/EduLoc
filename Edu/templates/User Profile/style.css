@@ -2,6 +2,77 @@ body {
     background: rgb(99, 39, 120)
 }
 
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+  }
+  
+  .navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #333;
+    padding: 10px 20px;
+  }
+  
+  .logo {
+    color: white;
+    font-size: 24px;
+    font-weight: bold;
+  }
+  
+  .nav-links {
+    list-style: none;
+    display: flex;
+    margin: 0;
+    padding: 0;
+  }
+  
+  .nav-links li {
+    margin-left: 20px;
+  }
+  
+  .nav-links a {
+    color: white;
+    text-decoration: none;
+    font-size: 18px;
+  }
+  
+  .burger {
+    display: none;
+    cursor: pointer;
+    flex-direction: column;
+    gap: 5px;
+  }
+  
+  .burger div {
+    width: 25px;
+    height: 3px;
+    background-color: white;
+  }
+  
+  /* Responsive */
+  @media screen and (max-width: 768px) {
+    .nav-links {
+      display: none;
+      flex-direction: column;
+      background-color: #333;
+      position: absolute;
+      top: 60px;
+      right: 0;
+      width: 100%;
+      text-align: center;
+    }
+  
+    .nav-links.active {
+      display: flex;
+    }
+  
+    .burger {
+      display: flex;
+    }
+  }  
+
 .form-control:focus {
     box-shadow: none;
     border-color: #BA68C8
