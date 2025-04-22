@@ -16,10 +16,12 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-from .views import nearby_search_map
+from .views import index
 
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/", include("api.urls")),
-    path("nearby-search/", nearby_search_map, name="nearby_search_map"),
+    path("auth/", include("user_auth.urls")),
+    path("", index, name="index"),
+path("index/", index, name="index"),
 ]

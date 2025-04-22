@@ -1,10 +1,145 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-    <meta charset="UTF-8">
-    <title>Title</title>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Educational Resource Finder</title>
+
+    <script async defer
+            src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCidnDGbdamsCKo2-6oQthbnZvR5iocszY&callback=initMap">
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+    <link rel="stylesheet" href="{% static 'css/nearby_search_styles.css' %}">
+    <script src="{% static 'js/script.js' %}"></script>
+    <script src="{% static 'js/searchHandlers.js' %}"></script>
 </head>
 <body>
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <div class="container-fluid">
+        <!-- Logo -->
+        <a class="navbar-brand" href="#">
+            Educational Resource Finder
+        </a>
+
+        <!-- Toggler for mobile view -->
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <!-- Navbar links -->
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item">
+                    <a class="nav-link active" aria-current="page" href="#">Home</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">About Us</a>
+                </li>
+            </ul>
+
+            <!-- Search bar -->
+            <form class="d-flex me-3 align-items-center" id="book-search-form">
+                <div class="input-group">
+                    <div class="input-group-prepend">
+                        <select class="form-select" id="search-by">
+                            <option value="author" selected>Author</option>
+                            <option value="title">Title</option>
+                            <option value="location">Location</option>
+                        </select>
+                    </div>
+                    <input class="form-control" id="book-search-input" type="search" placeholder="Search books"
+                           aria-label="Search">
+                    <button class="btn btn-outline-success" type="submit">Search</button>
+                </div>
+            </form>
+
+            <!-- Filter container -->
+            <div id="filter-container" class="d-flex align-items-center">
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="checkbox" id="library-filter" checked/>
+                    <label class="form-check-label" for="library-filter">Libraries</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="checkbox" id="event-filter" checked/>
+                    <label class="form-check-label" for="event-filter">Events</label>
+                </div>
+                <select class="form-select form-select-sm w-auto" id="radius-select">
+                    <option value="1500">1.5km</option>
+                    <option value="5000" selected>5km</option>
+                    <option value="10000">10km</option>
+                    <option value="15000">15km</option>
+                </select>
+            </div>
+
+            <!-- Profile button -->
+             <div>
+                {% if user.is_authenticated %}
+                    <!-- User Profile button -->
+                    <button type="button" class="btn btn-primary" onclick="window.location.href='{% url 'user_profile' %}'">Profile</button>
+                    <!-- Logout button -->
+                    <form method="post" action="{% url 'logout' %}" style="display: inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger">Logout</button>
+                    </form>
+                {% else %}
+                    <!-- Login/Register button -->
+                    <button type="button" class="btn btn-primary" onclick="window.location.href='{% url 'login_register' %}'">Login/Register</button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</nav>
+<div class="main-container">
+    <div class="left-panel">
+        {#        <div id="search-container">#}
+        {#            <div class="input-group mb-2">#}
+        {#                <input type="text" id="location-search" class="form-control" placeholder="Search for a location"/>#}
+        {#                <button class="btn btn-primary" id="search-button">Search</button>#}
+        {#            </div>#}
+        {#        </div>#}
+        <div id="map"></div>
+
+    </div>
+
+    <div class="right-sidebar">
+        <ul class="nav nav-tabs" id="resourceTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="libraries-tab" data-bs-toggle="tab" data-bs-target="#libraries"
+                        type="button" role="tab" aria-controls="libraries" aria-selected="true">Libraries
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="events-tab" data-bs-toggle="tab" data-bs-target="#events" type="button"
+                        role="tab" aria-controls="events" aria-selected="false">Events
+                </button>
+            </li>
+        </ul>
+        <div class="tab-content pt-3" id="resourceTabsContent">
+            <div class="tab-pane fade show active" id="libraries" role="tabpanel" aria-labelledby="libraries-tab">
+                <div id="libraries-list">Loading...</div>
+            </div>
+            <div class="tab-pane fade" id="events" role="tabpanel" aria-labelledby="events-tab">
+                <div id="events-list">Loading...</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div id="loading-spinner" style="display: none; text-align: center; margin-top: 1rem;">
+    <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+</div>
+<div id="book-covers-container" class="row mt-4"></div>
+
+<!-- Include your existing <script> here with initMap, fetchResources, etc. -->
 
 </body>
 </html>

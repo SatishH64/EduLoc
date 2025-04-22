@@ -1,0 +1,235 @@
+/*body {*/
+/*    font-family: Arial, sans-serif;*/
+/*    background-color: #f4f4f4;*/
+/*    text-align: center;*/
+/*}*/
+
+/*.profile-container {*/
+/*    background: white;*/
+/*    padding: 20px;*/
+/*    max-width: 400px;*/
+/*    margin: auto;*/
+/*    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);*/
+/*    border-radius: 8px;*/
+/*}*/
+
+/*.profile-pic {*/
+/*    width: 100px;*/
+/*    height: 100px;*/
+/*    border-radius: 50%;*/
+/*    object-fit: cover;*/
+/*}*/
+
+/*button {*/
+/*    background-color: #28a745;*/
+/*    color: white;*/
+/*    padding: 10px;*/
+/*    border: none;*/
+/*    cursor: pointer;*/
+/*    border-radius: 5px;*/
+/*}*/
+
+/*button:hover {*/
+/*    background-color: #218838;*/
+/*}*/
+/*.infowindow-content{*/
+/*            background: whitesmoke;*/
+/*            height: 200px;*/
+/*            width: 200px;*/
+/*}*/
+
+
+/*.info-card {*/
+/*      !*background: white;*!*/
+/*      padding: 0px;*/
+/*      !*border-radius: 20px;*!*/
+/*      !*box-shadow: 0 8px 20px rgba(0,0,0,0.08);*!*/
+/*      !*max-width: 360px;*!*/
+/*      !*width: 100%;*!*/
+/*      text-align: center;*/
+/*      transition: 0.3s ease;*/
+/*    background: #218838;*/
+/*    }*/
+
+/*    .info-card:hover {*/
+/*      transform: translateY(-6px);*/
+/*    }*/
+
+/*    .info-card h2 {*/
+/*      font-size: 1.8rem;*/
+/*      margin-bottom: 0.25rem;*/
+/*      color: #1f2937;*/
+/*    }*/
+
+/*    .type {*/
+/*      font-size: 1rem;*/
+/*      color: #6b7280;*/
+/*      margin-bottom: 1rem;*/
+/*    }*/
+
+/*    .details {*/
+/*      text-align: left;*/
+/*      margin-top: 1.5rem;*/
+/*    }*/
+
+/*    .details div {*/
+/*      display: flex;*/
+/*      align-items: center;*/
+/*      margin: 0.5rem 0;*/
+/*      font-size: 0.95rem;*/
+/*      color: #374151;*/
+/*    }*/
+
+/*    .details div i {*/
+/*      width: 24px;*/
+/*      margin-right: 10px;*/
+/*      color: #4f46e5;*/
+/*    }*/
+
+/*    .rating {*/
+/*      color: #facc15;*/
+/*      font-size: 1.1rem;*/
+/*    }*/
+
+/*    @media (max-width: 400px) {*/
+/*      .info-card {*/
+/*        padding: 1.5rem;*/
+/*      }*/
+/*    }*/
+
+
+body, html {
+    height: 100%;
+
+    font-family: Arial, sans-serif;
+}
+
+.main-container {
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+    margin: 0 10%;
+}
+
+.left-panel {
+    width: 65%;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+
+#map {
+    flex: 1;
+    height: 500px;
+    width: 100%;
+    padding: 50px;
+    border-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+#search-container {
+    position: relative;
+    z-index: 2;
+    background-color: #fff;
+    padding: 10px;
+    border-radius: 5px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    margin: 10px;
+}
+
+/*{##filter-container {#}*/
+/*{#  display: flex;#}*/
+/*{#  flex-wrap: wrap;#}*/
+/*{#  gap: 10px;#}*/
+/*{#  align-items: center;#}*/
+/*{# } #}*/
+
+.right-sidebar {
+    width: 35%;
+    overflow-y: auto;
+    background-color: #f8f9fa;
+    padding: 15px;
+    scrollbar-width: thin;
+}
+
+.resource-item {
+    border-bottom: 1px solid #ddd;
+    padding: 10px 0;
+}
+
+.badge {
+    margin-right: 5px;
+}
+
+#resourceTabs {
+    margin-bottom: 10px;
+}
+
+body, html {
+    height: 100%;
+    margin: 0;
+    font-family: Arial, sans-serif;
+    overflow-x: hidden; /* Prevent horizontal scrolling */
+}
+
+.container-fluid {
+    height: 100%;
+    padding: 0;
+}
+
+/*#map {*/
+/*    height: 70vh;*/
+/*    width: 100%;*/
+/*}*/
+
+
+.resource-item {
+    border-bottom: 1px solid #ddd;
+    padding: 10px 0;
+}
+
+.badge {
+    margin-right: 5px;
+}
+
+#search-container {
+    position: fixed;
+    top: 70px; /* Adjusted to sit below the navbar */
+    left: 10px;
+    z-index: 1040; /* Lower than the navbar */
+    background-color: #fff;
+    padding: 10px;
+    border-radius: 5px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    width: 300px;
+    max-width: calc(100% - 20px);
+}
+
+#filter-container {
+    /*{#position: fixe;#}*/
+    top: 70px; /* Adjusted to sit below the navbar */
+    right: 10px;
+    z-index: 1040; /* Lower than the navbar */
+    background-color: #fff;
+    padding: 10px;
+    border-radius: 5px;
+    max-width: calc(100% - 20px);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0);
+    margin-left: 10px;
+}
+
+.navbar {
+    z-index: 1050; /* Ensures it stays above other elements */
+    padding: 15px 20px; /* Adds padding to the navbar */
+    width: 100%; /* Full width */
+}
+
+.card {
+    background: white;
+    padding: 0px;
+    border-radius: 20px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+    max-width: 360px;
+    width: 100%;
+    text-align: center;
+    transition: 0.3s ease;
+}

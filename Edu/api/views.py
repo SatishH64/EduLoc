@@ -1,22 +1,18 @@
-from django.conf import settings
-from django.http import JsonResponse
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from django.core.cache import cache
-import requests
-
-
 from django.conf import settings
 from django.http import JsonResponse
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from django.core.cache import cache
+from .models import FavoriteLibrary
 import requests
 
+
+def index(request):
+    return render(request, 'index.html')
 
 class NearbySearchView(APIView):
     def get(self, request, *args, **kwargs):
@@ -216,3 +212,26 @@ class BookSearchView(APIView):
         # cache.set(cache_key, books, timeout=3600)
 
         return Response({"books": books})
+
+@login_required
+def toggle_favorite_library(request):
+    if request.method == 'POST':
+        library_id = request.POST.get('library_id')
+        library_name = request.POST.get('library_name')
+        library_address = request.POST.get('library_address')
+
+        # Check if the library is already favorite
+        favorite, created = FavoriteLibrary.objects.get_or_create(
+            user=request.user,
+            library_id=library_id,
+            defaults={'library_name': library_name, 'library_address': library_address}
+        )
+
+        if not created:
+            # If it already exists, remove it
+            favorite.delete()
+            return JsonResponse({'status': 'removed'})
+
+        return JsonResponse({'status': 'added'})
+
+    return JsonResponse({'error': 'Invalid request'}, status=400)

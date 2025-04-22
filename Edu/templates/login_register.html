@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>LogIn/SignUp Page</title>
+{#    <link rel="stylesheet" href="{% static 'css/modal_styles.css' %}">#}
+    <link rel="stylesheet" href="{% static 'css/login_register.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+        .modal-content {
+            background-color: #fff;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 30%;
+            border-radius: 10px;
+            text-align: center;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="screen">
+            <div class="screen__content">
+                <form class="login" method="post" action="{% url 'login' %}">
+                    {% csrf_token %}
+                    <div class="login__field">
+                        <i class="login__icon fas fa-user"></i>
+                        <input type="text" name="username" class="login__input" placeholder="Username" required>
+                    </div>
+                    <div class="login__field">
+                        <i class="login__icon fas fa-lock"></i>
+                        <input type="password" name="password" class="login__input" placeholder="Password" required>
+                    </div>
+                    <button type="submit" class="button login__submit">
+                        <span class="button__text">Log In</span>
+                        <i class="button__icon fas fa-chevron-right"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Register Confirmation -->
+    <div id="registerConfirmModal" class="modal" style="{% static 'css/modal_styles.css' %}">
+        <div class="modal-content">
+            <span class="close" id="closeModal">&times;</span>
+            <form method="post" action="{% url 'login' %}">
+                {% csrf_token %}
+                <p>User with the username "<span id="modalUsername"></span>" does not exist.</p>
+                <p>Do you want to create an account with this username and password?</p>
+                <input type="hidden" name="username" id="modalHiddenUsername">
+                <input type="hidden" name="password" id="modalHiddenPassword">
+                <input type="email" name="email" placeholder="Email" required>
+                <button type="submit" name="confirm_create">Yes, Create Account</button>
+            </form>
+        </div>
+    </div>
+    <script>
+    // Check if the modal should be displayed
+    {% if show_register_modal %}
+    document.addEventListener('DOMContentLoaded', function() {
+        showRegisterConfirmModal("{{ username }}", "{{ password }}");
+    });
+    {% endif %}
+</script>
+    <script>
+        // JavaScript to handle modal display
+        function showRegisterConfirmModal(username, password) {
+            document.getElementById('modalUsername').textContent = username;
+            document.getElementById('modalHiddenUsername').value = username;
+            document.getElementById('modalHiddenPassword').value = password;
+            document.getElementById('registerConfirmModal').style.display = 'block';
+        }
+
+        document.getElementById('closeModal').onclick = function() {
+            document.getElementById('registerConfirmModal').style.display = 'none';
+        };
+
+        window.onclick = function(event) {
+            const modal = document.getElementById('registerConfirmModal');
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        };
+    </script>
+</body>
+</html>

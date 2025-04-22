@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "api",
+    "user_auth",
 ]
 
 MIDDLEWARE = [
@@ -89,6 +90,10 @@ DATABASES = {
     }
 }
 
+AUTHENTICATION_BACKENDS = [
+    'user_auth.backends.WebsiteUserBackend',  # Custom backend for website users
+    'django.contrib.auth.backends.ModelBackend',  # Default backend for admin users
+]
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators

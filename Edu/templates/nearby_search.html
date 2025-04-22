@@ -4,7 +4,7 @@
 <head>
     <title>Nearby Search</title>
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCidnDGbdamsCKo2-6oQthbnZvR5iocszY&libraries=places&callback=initMap" async defer></script>
-    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <link rel="stylesheet" href="{% static 'css/nearby_search_styles.css' %}">
     <style>
         .info-card {
           background: white;
@@ -157,6 +157,9 @@
                 content: `<div class="info-card">
                             <h2>${place.name}</h2>
                             <div class="type">Type: ${place.types[0][0].toUpperCase() + place.types[0].substring(1)}</div>
+                            <button class="favorite-btn" data-library-id="{{ library_id }}" data-library-name="{{ library_name }}" data-library-address="{{ library_address }}">
+                                        Add to Favorites
+                            </button>
                             <div class="details">
                               <div><i class="fas fa-star"></i><span class="rating">${place.rating ?? "Not Rated"} / 5.0</span></div>
                               <div><i class="far fa-clock"></i>10:00 AM – 10:00 PM</div>
@@ -257,8 +260,19 @@
 </script>
 </head>
 <body>
-
     <h1>Educational Resource Finder</h1>
+    <div>
+        <form method="post" action="{% url 'logout' %}">
+            {% csrf_token %}
+            {% if user.is_authenticated %}
+                <button type="button" onclick="window.location.href='{% url 'user_profile' %}'">Profile</button>
+                <button type="submit">Logout</button>
+            {% else %}
+                <button type="button" onclick="window.location.href='{% url 'login' %}'">Profile</button>
+                <a href="{% url 'login' %}">Login</a>
+            {% endif %}
+        </form>
+    </div>>
 
     <input id="autocomplete" type="text" placeholder="Enter a location" style="width: 100%; padding: 10px; margin-bottom: 10px;">
     <button id="search-button" style="width: 100%; padding: 10px; margin-bottom: 10px;">Search</button>

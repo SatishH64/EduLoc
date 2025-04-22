@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Profile</title>
+    <link rel="stylesheet" href="{% static 'css/user_profile.css' %}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">{{ user.username }}</div>
+        <ul class="nav-links" id="navLinks">
+          <li><a href="{% url 'index' %}">Home</a></li>
+          <li><a href="#">Profile</a></li>
+          <li><a href="{% url 'logout' %}">Log Out</a></li>
+        </ul>
+        <div class="burger" onclick="toggleMenu()">
+          <div class="line1"></div>
+          <div class="line2"></div>
+          <div class="line3"></div>
+        </div>
+    </nav>
+
+    <script>
+        function toggleMenu() {
+          document.getElementById("navLinks").classList.toggle("active");
+        }
+    </script>
+
+    <div class="container rounded bg-white mt-5 mb-5">
+        <form method="post">
+            {% csrf_token %}
+            <div class="row">
+                <div class="col-md-3 border-right">
+                    <div class="d-flex flex-column align-items-center text-center p-3 py-5">
+                        <img class="rounded-circle mt-5" width="150px" src="https://st3.depositphotos.com/15648834/17930/v/600/depositphotos_179308454-stock-illustration-unknown-person-silhouette-glasses-profile.jpg">
+                        <span class="font-weight-bold">{{ user.first_name }} {{ user.last_name }}</span>
+                        <span class="text-black-50">{{ user.email }}</span>
+                    </div>
+                </div>
+                <div class="col-md-9">
+                    <div class="p-3 py-5">
+                        <h4 class="text-right">User Profile</h4>
+
+                        <!-- Editable Fields -->
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <label class="labels">First Name</label>
+                                <input type="text" class="form-control" name="first_name" value="{{ user.first_name }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="labels">Last Name</label>
+                                <input type="text" class="form-control" name="last_name" value="{{ user.last_name }}">
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-md-12">
+                                <label class="labels">Email</label>
+                                <input type="email" class="form-control" name="email" value="{{ user.email }}">
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <label class="labels">Phone Number</label>
+                                <input type="text" class="form-control" name="phone_number" value="{{ user.profile.phone_number }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="labels">Gender</label>
+                                <select class="form-control" name="gender">
+                                    <option value="Male" {% if user.profile.gender == "Male" %}selected{% endif %}>Male</option>
+                                    <option value="Female" {% if user.profile.gender == "Female" %}selected{% endif %}>Female</option>
+                                    <option value="Other" {% if user.profile.gender == "Other" %}selected{% endif %}>Other</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-md-12">
+                                <label class="labels">Address</label>
+                                <textarea class="form-control" name="address">{{ user.profile.address }}</textarea>
+                            </div>
+                        </div>
+
+                        <!-- Save Button -->
+                        <div class="mt-5 text-center">
+                            <button type="submit" class="btn btn-success">Save Changes</button>
+                        </div>
+
+                        <!-- Favorites Section -->
+                        <div class="mt-5">
+                            <h5>Favorite Libraries</h5>
+                            <ul class="list-group">
+                                {% for library in favorite_libraries %}
+                                    <li class="list-group-item">
+                                        <strong>{{ library.library_name }}</strong><br>
+                                        {{ library.library_address }}
+                                    </li>
+                                {% empty %}
+                                    <li class="list-group-item">No favorite libraries added yet.</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+
+                        <div class="mt-5">
+                            <h5>Favorite Books</h5>
+                            <ul class="list-group">
+                                {% for book in favorite_books %}
+                                    <li class="list-group-item">
+                                        <strong>{{ book.title }}</strong> by {{ book.author }}<br>
+                                        Published: {{ book.first_publish_year }}
+                                    </li>
+                                {% empty %}
+                                    <li class="list-group-item">No favorite books added yet.</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+
+                        <div class="mt-5">
+                            <h5>Favorite Events</h5>
+                            <ul class="list-group">
+                                {% for event in favorite_events %}
+                                    <li class="list-group-item">
+                                        <strong>{{ event.title }}</strong><br>
+                                        {{ event.description }}<br>
+                                        Start: {{ event.start }} | End: {{ event.end }}
+                                    </li>
+                                {% empty %}
+                                    <li class="list-group-item">No favorite events added yet.</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,7 +1,9 @@
 from django.urls import path
-from .views import NearbySearchView,BookSearchView,EducationEventSearchView,place_details
+from .views import *
 
 urlpatterns = [
+    path('index/', index, name='index'),
+    path('toggle-favorite-library/', toggle_favorite_library, name='toggle_favorite_library'),
     path('place-details/', place_details, name='place-details'),
     path('nearby-search/', NearbySearchView.as_view(), name='nearby-search'),
     path('search-books/', BookSearchView.as_view(), name='search-books'),
