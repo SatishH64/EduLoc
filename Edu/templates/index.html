@@ -22,9 +22,7 @@
 <nav class="navbar navbar-expand-lg navbar-light bg-light">
     <div class="container-fluid">
         <!-- Logo -->
-        <a class="navbar-brand" href="#">
-            Educational Resource Finder
-        </a>
+        <a class="navbar-brand fw-bold" href="#">Educational Resource Finder</a>
 
         <!-- Toggler for mobile view -->
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
@@ -32,9 +30,10 @@
             <span class="navbar-toggler-icon"></span>
         </button>
 
-        <!-- Navbar links -->
+        <!-- Navbar content -->
         <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav me-auto">
+            <!-- Left nav links -->
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                 <li class="nav-item">
                     <a class="nav-link active" aria-current="page" href="#">Home</a>
                 </li>
@@ -43,66 +42,112 @@
                 </li>
             </ul>
 
-            <!-- Search bar -->
-            <form class="d-flex me-3 align-items-center" id="book-search-form">
-                <div class="input-group">
-                    <div class="input-group-prepend">
-                        <select class="form-select" id="search-by">
-                            <option value="author" selected>Author</option>
-                            <option value="title">Title</option>
-                            <option value="location">Location</option>
-                        </select>
+            <!-- Right-side tools -->
+            <div class="d-flex align-items-center gap-3 flex-wrap">
+                <!-- Search bar -->
+                <div id="search-container">
+                    <div class="input-group">
+                        <input type="text" id="location-search" class="form-control"
+                               placeholder="Search for a location"/>
+                        <button class="btn btn-primary" id="search-button">Search</button>
                     </div>
-                    <input class="form-control" id="book-search-input" type="search" placeholder="Search books"
-                           aria-label="Search">
-                    <button class="btn btn-outline-success" type="submit">Search</button>
                 </div>
-            </form>
 
-            <!-- Filter container -->
-            <div id="filter-container" class="d-flex align-items-center">
-                <div class="form-check form-check-inline">
-                    <input class="form-check-input" type="checkbox" id="library-filter" checked/>
-                    <label class="form-check-label" for="library-filter">Libraries</label>
-                </div>
-                <div class="form-check form-check-inline">
-                    <input class="form-check-input" type="checkbox" id="event-filter" checked/>
-                    <label class="form-check-label" for="event-filter">Events</label>
-                </div>
-                <select class="form-select form-select-sm w-auto" id="radius-select">
-                    <option value="1500">1.5km</option>
-                    <option value="5000" selected>5km</option>
-                    <option value="10000">10km</option>
-                    <option value="15000">15km</option>
-                </select>
-            </div>
+                <!-- Filter dropdown -->
+                <div id="filter-container" class="d-flex align-items-center gap-2">
+                    <div class="dropdown">
+                        <button class="btn btn-outline-secondary dropdown-toggle" type="button"
+                                data-bs-toggle="dropdown"
+                                aria-expanded="false">
+                            Filter Categories
+                        </button>
+                        <ul class="dropdown-menu p-3" style="min-width: 250px;">
+                            <li>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="library-filter" checked/>
+                                    <label class="form-check-label" for="library-filter">Libraries</label>
+                                </div>
+                            </li>
+                            <li>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="universities-filter" checked/>
+                                    <label class="form-check-label" for="universities-filter">Univrsitiy</label>
+                                </div>
+                            </li>
+                            <li>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="schools-filter" checked/>
+                                    <label class="form-check-label" for="schools-filter">Schools</label>
+                                </div>
+                            </li>
+                            <li>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="event-filter" checked/>
+                                    <label class="form-check-label" for="event-filter">Events</label>
+                                </div>
+                            </li>
+                            <li>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="bookstores-filter" checked/>
+                                    <label class="form-check-label" for="bookstores-filter">Books Store</label>
+                                </div>
+                            </li>
+                            <li>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="primary-schools-filter"
+                                           checked/>
+                                    <label class="form-check-label" for="primary-schools-filter">Primary Schools</label>
+                                </div>
+                            </li>
+                            <li>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="secondary-schools-filter"
+                                           checked/>
+                                    <label class="form-check-label" for="secondary-schools-filter">Secondary
+                                        Schools</label>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
 
-            <!-- Profile button -->
-             <div>
-                {% if user.is_authenticated %}
-                    <!-- User Profile button -->
-                    <button type="button" class="btn btn-primary" onclick="window.location.href='{% url 'user_profile' %}'">Profile</button>
-                    <!-- Logout button -->
-                    <form method="post" action="{% url 'logout' %}" style="display: inline;">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-danger">Logout</button>
-                    </form>
-                {% else %}
-                    <!-- Login/Register button -->
-                    <button type="button" class="btn btn-primary" onclick="window.location.href='{% url 'login_register' %}'">Login/Register</button>
-                {% endif %}
+                    <!-- Radius selector -->
+                    <select class="form-select form-select-sm" id="radius-select">
+                        <option value="1500">1.5km</option>
+                        <option value="5000" selected>5km</option>
+                        <option value="10000">10km</option>
+                        <option value="15000">15km</option>
+                    </select>
+                </div>
+
+                <!-- Profile/Login buttons -->
+                <div>
+                    {% if user.is_authenticated %}
+                        <button type="button" class="btn btn-outline-primary"
+                                onclick="window.location.href='{% url 'user_profile' %}'">Profile
+                        </button>
+                        <form method="post" action="{% url 'logout' %}" style="display: inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-outline-danger ms-1">Logout</button>
+                        </form>
+                    {% else %}
+                        <button type="button" class="btn btn-primary"
+                                onclick="window.location.href='{% url 'login_register' %}'">Login/Register
+                        </button>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </div>
 </nav>
+
 <div class="main-container">
     <div class="left-panel">
-        {#        <div id="search-container">#}
-        {#            <div class="input-group mb-2">#}
-        {#                <input type="text" id="location-search" class="form-control" placeholder="Search for a location"/>#}
-        {#                <button class="btn btn-primary" id="search-button">Search</button>#}
-        {#            </div>#}
-        {#        </div>#}
+        {#                <div id="search-container">#}
+        {#                    <div class="input-group mb-2">#}
+        {#                        <input type="text" id="location-search" class="form-control" placeholder="Search for a location"/>#}
+        {#                        <button class="btn btn-primary" id="search-button">Search</button>#}
+        {#                    </div>#}
+        {#                </div>#}
         <div id="map"></div>
 
     </div>
@@ -119,13 +164,59 @@
                         role="tab" aria-controls="events" aria-selected="false">Events
                 </button>
             </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link " id="schools-tab" data-bs-toggle="tab" data-bs-target="#schools"
+                        type="button" role="tab" aria-controls="schools" aria-selected="true">Schools
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="universities-tab" data-bs-toggle="tab" data-bs-target="#universities"
+                        type="button"
+                        role="tab" aria-controls="universities" aria-selected="false">Universities
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="bookstores-tab" data-bs-toggle="tab" data-bs-target="#book-stores"
+                        type="button"
+                        role="tab" aria-controls="book-stores" aria-selected="false">Book Stores
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link " id="primary-schools-tab" data-bs-toggle="tab"
+                        data-bs-target="#primary-schools"
+                        type="button" role="tab" aria-controls="primary-schools" aria-selected="true">Primary Schools
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="secondary-schools-tab" data-bs-toggle="tab"
+                        data-bs-target="#secondary-schools"
+                        type="button"
+                        role="tab" aria-controls="secondary-schools" aria-selected="false">Secondary Schools
+                </button>
+            </li>
         </ul>
         <div class="tab-content pt-3" id="resourceTabsContent">
             <div class="tab-pane fade show active" id="libraries" role="tabpanel" aria-labelledby="libraries-tab">
                 <div id="libraries-list">Loading...</div>
             </div>
-            <div class="tab-pane fade" id="events" role="tabpanel" aria-labelledby="events-tab">
+            <div class="tab-pane fade show" id="events" role="tabpanel" aria-labelledby="events-tab">
                 <div id="events-list">Loading...</div>
+            </div>
+            <div class="tab-pane fade show" id="universities" role="tabpanel" aria-labelledby="universities-tab">
+                <div id="universities-list">Loading...</div>
+            </div>
+            <div class="tab-pane fade show " id="schools" role="tabpanel" aria-labelledby="schools-tab">
+                <div id="schools-list">Loading...</div>
+            </div>
+            <div class="tab-pane fade show" id="book-stores" role="tabpanel" aria-labelledby="book-stores-tab">
+                <div id="book-stores-list">Loading...</div>
+            </div>
+            <div class="tab-pane fade show" id="primary-schools" role="tabpanel" aria-labelledby="primary-schools-tab">
+                <div id="primary-schools-list">Loading...</div>
+            </div>
+            <div class="tab-pane fade show " id="secondary-schools" role="tabpanel"
+                 aria-labelledby="secondary-schools-tab">
+                <div id="secondary-schools-list">Loading...</div>
             </div>
         </div>
     </div>

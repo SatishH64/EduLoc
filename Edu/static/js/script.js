@@ -152,13 +152,20 @@ function fetchResources() {
     if (!currentPosition) return;
 
     const showLibraries = document.getElementById("library-filter").checked;
+    const showUniversities = document.getElementById("universities-filter").checked;
+    const showSchools = document.getElementById("schools-filter").checked;
     const showEvents = document.getElementById("event-filter").checked;
+    const showPrimarySchools = document.getElementById("primary-schools-filter").checked;
+    const showSecondarySchools = document.getElementById("secondary-schools-filter").checked;
+    const showBookStores = document.getElementById("bookstores-filter").checked;
     const radius = document.getElementById("radius-select").value;
     const startDate = new Date().toISOString().split('T')[0]; // Current date
     let endDate = null
 
     document.getElementById("libraries-list").innerHTML = "Loading...";
     document.getElementById("events-list").innerHTML = "Loading...";
+    document.getElementById("schools-filter").innerHTML = "Loading...";
+    document.getElementById("universities-filter").innerHTML = "Loading...";
 
     const location = `${currentPosition.lat},${currentPosition.lng}`;
 
@@ -177,6 +184,37 @@ function fetchResources() {
     } else {
         document.getElementById("libraries-list").innerHTML = "<p>Libraries filter is turned off</p>";
     }
+
+    if (showUniversities) {
+        // Fetch libraries
+        fetch(`/api/nearby-search/?location=${location}&radius=${radius}&type=university`)
+            .then(response => response.json())
+            .then(data => {
+                console.log(data);
+                displayUniversities(data.places);
+            })
+            .catch(error => {
+                console.error('Error fetching Univerities:', error);
+                document.getElementById("universities-list").innerHTML = "<p>Error loading Universities</p>";
+            });
+    } else {
+        document.getElementById("universities-list").innerHTML = "<p>Universities filter is turned off</p>";
+    }
+    if (showSchools) {
+        // Fetch libraries
+        fetch(`/api/nearby-search/?location=${location}&radius=${radius}&type=school`)
+            .then(response => response.json())
+            .then(data => {
+                console.log(data);
+                displaySchools(data.places);
+            })
+            .catch(error => {
+                console.error('Error fetching schools:', error);
+                document.getElementById("schools-list").innerHTML = "<p>Error loading schools</p>";
+            });
+    } else {
+        document.getElementById("schools-list").innerHTML = "<p>schools filter is turned off</p>";
+    }
     console.log(startDate, endDate);
     if (showEvents) {
         // Fetch events
@@ -193,6 +231,55 @@ function fetchResources() {
     } else {
         document.getElementById("events-list").innerHTML = "<p>Events filter is turned off</p>";
     }
+
+    if (showPrimarySchools) {
+        // Fetch libraries
+        fetch(`/api/nearby-search/?location=${location}&radius=${radius}&type=primary_school`)
+            .then(response => response.json())
+            .then(data => {
+                console.log(data);
+                displayPrimarySchools(data.places);
+            })
+            .catch(error => {
+                console.error('Error fetching primary schools:', error);
+                document.getElementById("primary-schools-list").innerHTML = "<p>Error loading libraries</p>";
+            });
+    } else {
+        document.getElementById("primary-schools-list").innerHTML = "<p>Libraries filter is turned off</p>";
+    }
+
+    if (showSecondarySchools) {
+        // Fetch libraries
+        fetch(`/api/nearby-search/?location=${location}&radius=${radius}&type=secondary_school`)
+            .then(response => response.json())
+            .then(data => {
+                console.log(data);
+                displaySecondarySchools(data.places);
+            })
+            .catch(error => {
+                console.error('Error fetching secondary Schools:', error);
+                document.getElementById("secondary-schools-list").innerHTML = "<p>Error loading libraries</p>";
+            });
+    } else {
+        document.getElementById("secondary-schools-list").innerHTML = "<p>Secondary schools filter is turned off</p>";
+    }
+
+    if (showBookStores) {
+        // Fetch libraries
+        fetch(`/api/nearby-search/?location=${location}&radius=${radius}&type=book_store`)
+            .then(response => response.json())
+            .then(data => {
+                console.log(data);
+                displayBookStores(data.places);
+            })
+            .catch(error => {
+                console.error('Error fetching Book Stores:', error);
+                document.getElementById("book-stores-list").innerHTML = "<p>Error loading libraries</p>";
+            });
+    } else {
+        document.getElementById("book-stores-list").innerHTML = "<p>Book stores filter is turned off</p>";
+    }
+
 }
 
 
@@ -334,6 +421,366 @@ function displayEvents(events) {
     });
 
     document.getElementById("events-list").innerHTML = html;
+}
+
+function displayUniversities(places) {
+    if (!places || places.length === 0) {
+        document.getElementById("universities-list").innerHTML = "<p>No libraries found in this area</p>";
+        return;
+    }
+
+    let html = '';
+
+    places.forEach(place => {
+        // Add marker to map
+        if (document.getElementById("universities-filter").checked) {
+            const marker = new google.maps.Marker({
+                position: {
+                    lat: place.geometry.location.lat,
+                    lng: place.geometry.location.lng
+                },
+                map: map,
+                title: place.name,
+                icon: {
+                    url: "http://maps.google.com/mapfiles/ms/icons/yellow-dot.png"
+                }
+            });
+
+            const infoWindow = new google.maps.InfoWindow({
+                content: `<div><h5>${place.name}</h5><p>${place.vicinity}</p></div>`
+            });
+
+            marker.addListener("click", () => {
+                if (currentInfoWindow) {
+                    currentInfoWindow.close();
+                }
+                infoWindow.open(map, marker);
+                currentInfoWindow = infoWindow;
+
+                // Get more details
+                fetch(`/api/place-details/?placeId=${place.place_id}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        const result = data.result || {};
+                        let content = `<div><h5>${place.name}</h5><p>${place.vicinity}</p>`;
+
+                        if (result.formatted_phone_number) {
+                            content += `<p>Phone: ${result.formatted_phone_number}</p>`;
+                        }
+
+                        if (result.website) {
+                            content += `<p><a href="${result.website}" target="_blank">Website</a></p>`;
+                        }
+
+                        content += '</div>';
+                        infoWindow.setContent(content);
+                    });
+            });
+
+            markers.push(marker);
+        }
+
+        // Add to list
+        html += `
+                <div class="resource-item">
+                    <h5>${place.name}</h5>
+                    <p>${place.vicinity}</p>
+                    <div>
+                        <span class="badge bg-info">${place.rating ? place.rating + '★' : 'No rating'}</span>
+                        ${place.open_now ? '<span class="badge bg-success">Open Now</span>' : ''}
+                    </div>
+                </div>`;
+    });
+
+    document.getElementById("universities-list").innerHTML = html;
+}
+
+function displaySchools(places) {
+    if (!places || places.length === 0) {
+        document.getElementById("schools-list").innerHTML = "<p>No schools found in this area</p>";
+        return;
+    }
+
+    let html = '';
+
+    places.forEach(place => {
+        // Add marker to map
+        if (document.getElementById("schools-filter").checked) {
+            const marker = new google.maps.Marker({
+                position: {
+                    lat: place.geometry.location.lat,
+                    lng: place.geometry.location.lng
+                },
+                map: map,
+                title: place.name,
+                icon: {
+                    url: "http://maps.google.com/mapfiles/ms/icons/purple-dot.png"
+                }
+            });
+
+            const infoWindow = new google.maps.InfoWindow({
+                content: `<div><h5>${place.name}</h5><p>${place.vicinity}</p></div>`
+            });
+
+            marker.addListener("click", () => {
+                if (currentInfoWindow) {
+                    currentInfoWindow.close();
+                }
+                infoWindow.open(map, marker);
+                currentInfoWindow = infoWindow;
+
+                // Get more details
+                fetch(`/api/place-details/?placeId=${place.place_id}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        const result = data.result || {};
+                        let content = `<div><h5>${place.name}</h5><p>${place.vicinity}</p>`;
+
+                        if (result.formatted_phone_number) {
+                            content += `<p>Phone: ${result.formatted_phone_number}</p>`;
+                        }
+
+                        if (result.website) {
+                            content += `<p><a href="${result.website}" target="_blank">Website</a></p>`;
+                        }
+
+                        content += '</div>';
+                        infoWindow.setContent(content);
+                    });
+            });
+
+            markers.push(marker);
+        }
+
+        // Add to list
+        html += `
+                <div class="resource-item">
+                    <h5>${place.name}</h5>
+                    <p>${place.vicinity}</p>
+                    <div>
+                        <span class="badge bg-info">${place.rating ? place.rating + '★' : 'No rating'}</span>
+                        ${place.open_now ? '<span class="badge bg-success">Open Now</span>' : ''}
+                    </div>
+                </div>`;
+    });
+
+    document.getElementById("schools-list").innerHTML = html;
+}
+
+function displayPrimarySchools(places) {
+    if (!places || places.length === 0) {
+        document.getElementById("primary-schools-list").innerHTML = "<p>No schools found in this area</p>";
+        return;
+    }
+
+    let html = '';
+
+    places.forEach(place => {
+        // Add marker to map
+        if (document.getElementById("primary-schools-filter").checked) {
+            const marker = new google.maps.Marker({
+                position: {
+                    lat: place.geometry.location.lat,
+                    lng: place.geometry.location.lng
+                },
+                map: map,
+                title: place.name,
+                icon: {
+                    url: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png"
+                }
+            });
+
+            const infoWindow = new google.maps.InfoWindow({
+                content: `<div><h5>${place.name}</h5><p>${place.vicinity}</p></div>`
+            });
+
+            marker.addListener("click", () => {
+                if (currentInfoWindow) {
+                    currentInfoWindow.close();
+                }
+                infoWindow.open(map, marker);
+                currentInfoWindow = infoWindow;
+
+                // Get more details
+                fetch(`/api/place-details/?placeId=${place.place_id}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        const result = data.result || {};
+                        let content = `<div><h5>${place.name}</h5><p>${place.vicinity}</p>`;
+
+                        if (result.formatted_phone_number) {
+                            content += `<p>Phone: ${result.formatted_phone_number}</p>`;
+                        }
+
+                        if (result.website) {
+                            content += `<p><a href="${result.website}" target="_blank">Website</a></p>`;
+                        }
+
+                        content += '</div>';
+                        infoWindow.setContent(content);
+                    });
+            });
+
+            markers.push(marker);
+        }
+
+        // Add to list
+        html += `
+                <div class="resource-item">
+                    <h5>${place.name}</h5>
+                    <p>${place.vicinity}</p>
+                    <div>
+                        <span class="badge bg-info">${place.rating ? place.rating + '★' : 'No rating'}</span>
+                        ${place.open_now ? '<span class="badge bg-success">Open Now</span>' : ''}
+                    </div>
+                </div>`;
+    });
+
+    document.getElementById("primary-schools-list").innerHTML = html;
+}
+
+function displaySecondarySchools(places) {
+    if (!places || places.length === 0) {
+        document.getElementById("secondary-schools-list").innerHTML = "<p>No schools found in this area</p>";
+        return;
+    }
+
+    let html = '';
+
+    places.forEach(place => {
+        // Add marker to map
+        if (document.getElementById("secondary-schools-filter").checked) {
+            const marker = new google.maps.Marker({
+                position: {
+                    lat: place.geometry.location.lat,
+                    lng: place.geometry.location.lng
+                },
+                map: map,
+                title: place.name,
+                icon: {
+                    url: "http://maps.google.com/mapfiles/ms/icons/red-dot.png"
+                }
+            });
+
+            const infoWindow = new google.maps.InfoWindow({
+                content: `<div><h5>${place.name}</h5><p>${place.vicinity}</p></div>`
+            });
+
+            marker.addListener("click", () => {
+                if (currentInfoWindow) {
+                    currentInfoWindow.close();
+                }
+                infoWindow.open(map, marker);
+                currentInfoWindow = infoWindow;
+
+                // Get more details
+                fetch(`/api/place-details/?placeId=${place.place_id}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        const result = data.result || {};
+                        let content = `<div><h5>${place.name}</h5><p>${place.vicinity}</p>`;
+
+                        if (result.formatted_phone_number) {
+                            content += `<p>Phone: ${result.formatted_phone_number}</p>`;
+                        }
+
+                        if (result.website) {
+                            content += `<p><a href="${result.website}" target="_blank">Website</a></p>`;
+                        }
+
+                        content += '</div>';
+                        infoWindow.setContent(content);
+                    });
+            });
+
+            markers.push(marker);
+        }
+
+        // Add to list
+        html += `
+                <div class="resource-item">
+                    <h5>${place.name}</h5>
+                    <p>${place.vicinity}</p>
+                    <div>
+                        <span class="badge bg-info">${place.rating ? place.rating + '★' : 'No rating'}</span>
+                        ${place.open_now ? '<span class="badge bg-success">Open Now</span>' : ''}
+                    </div>
+                </div>`;
+    });
+
+    document.getElementById("secondary-schools-list").innerHTML = html;
+}
+
+function displayBookStores(places) {
+    if (!places || places.length === 0) {
+        document.getElementById("book-stores-list").innerHTML = "<p>No schools found in this area</p>";
+        return;
+    }
+
+    let html = '';
+
+    places.forEach(place => {
+        // Add marker to map
+        if (document.getElementById("bookstores-filter").checked) {
+            const marker = new google.maps.Marker({
+                position: {
+                    lat: place.geometry.location.lat,
+                    lng: place.geometry.location.lng
+                },
+                map: map,
+                title: place.name,
+                icon: {
+                    url: "http://maps.google.com/mapfiles/ms/icons/orange-dot.png"
+                }
+            });
+
+            const infoWindow = new google.maps.InfoWindow({
+                content: `<div><h5>${place.name}</h5><p>${place.vicinity}</p></div>`
+            });
+
+            marker.addListener("click", () => {
+                if (currentInfoWindow) {
+                    currentInfoWindow.close();
+                }
+                infoWindow.open(map, marker);
+                currentInfoWindow = infoWindow;
+
+                // Get more details
+                fetch(`/api/place-details/?placeId=${place.place_id}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        const result = data.result || {};
+                        let content = `<div><h5>${place.name}</h5><p>${place.vicinity}</p>`;
+
+                        if (result.formatted_phone_number) {
+                            content += `<p>Phone: ${result.formatted_phone_number}</p>`;
+                        }
+
+                        if (result.website) {
+                            content += `<p><a href="${result.website}" target="_blank">Website</a></p>`;
+                        }
+
+                        content += '</div>';
+                        infoWindow.setContent(content);
+                    });
+            });
+
+            markers.push(marker);
+        }
+
+        // Add to list
+        html += `
+                <div class="resource-item">
+                    <h5>${place.name}</h5>
+                    <p>${place.vicinity}</p>
+                    <div>
+                        <span class="badge bg-info">${place.rating ? place.rating + '★' : 'No rating'}</span>
+                        ${place.open_now ? '<span class="badge bg-success">Open Now</span>' : ''}
+                    </div>
+                </div>`;
+    });
+
+    document.getElementById("book-stores-list").innerHTML = html;
 }
 
 // Allow pressing Enter in the search box

@@ -23,5 +23,5 @@ urlpatterns = [
     path("api/", include("api.urls")),
     path("auth/", include("user_auth.urls")),
     path("", index, name="index"),
-path("index/", index, name="index"),
+    path("index/", index, name="index"),
 ]

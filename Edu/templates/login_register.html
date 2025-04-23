@@ -3,112 +3,77 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>LogIn/SignUp Page</title>
-{#    <link rel="stylesheet" href="{% static 'css/modal_styles.css' %}">#}
+    <title>Login/Sign Up</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'css/login_register.css' %}">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <style>
-        /* Modal styles */
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            overflow: auto;
-            background-color: rgba(0, 0, 0, 0.5);
-        }
-        .modal-content {
-            background-color: #fff;
-            margin: 15% auto;
-            padding: 20px;
-            border: 1px solid #888;
-            width: 30%;
-            border-radius: 10px;
-            text-align: center;
-        }
-        .close {
-            color: #aaa;
-            float: right;
-            font-size: 28px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-        .close:hover,
-        .close:focus {
-            color: black;
-            text-decoration: none;
-            cursor: pointer;
-        }
-    </style>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </head>
-<body>
-    <div class="container">
-        <div class="screen">
-            <div class="screen__content">
-                <form class="login" method="post" action="{% url 'login' %}">
-                    {% csrf_token %}
-                    <div class="login__field">
-                        <i class="login__icon fas fa-user"></i>
-                        <input type="text" name="username" class="login__input" placeholder="Username" required>
-                    </div>
-                    <div class="login__field">
-                        <i class="login__icon fas fa-lock"></i>
-                        <input type="password" name="password" class="login__input" placeholder="Password" required>
-                    </div>
-                    <button type="submit" class="button login__submit">
-                        <span class="button__text">Log In</span>
-                        <i class="button__icon fas fa-chevron-right"></i>
-                    </button>
-                </form>
-            </div>
-        </div>
-    </div>
+<body class="bg-light d-flex justify-content-center align-items-center vh-100">
 
-    <!-- Modal for Register Confirmation -->
-    <div id="registerConfirmModal" class="modal" style="{% static 'css/modal_styles.css' %}">
-        <div class="modal-content">
-            <span class="close" id="closeModal">&times;</span>
+<div class="container" style="max-width: 400px;">
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <h4 class="card-title mb-4 text-center">Login</h4>
             <form method="post" action="{% url 'login' %}">
                 {% csrf_token %}
-                <p>User with the username "<span id="modalUsername"></span>" does not exist.</p>
-                <p>Do you want to create an account with this username and password?</p>
-                <input type="hidden" name="username" id="modalHiddenUsername">
-                <input type="hidden" name="password" id="modalHiddenPassword">
-                <input type="email" name="email" placeholder="Email" required>
-                <button type="submit" name="confirm_create">Yes, Create Account</button>
+                <div class="mb-3">
+                    <label for="username" class="form-label">Username</label>
+                    <input type="text" name="username" id="username" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label for="password" class="form-label">Password</label>
+                    <input type="password" name="password" id="password" class="form-control" required>
+                </div>
+                <button type="submit" class="btn btn-primary w-100">Log In</button>
             </form>
         </div>
     </div>
-    <script>
-    // Check if the modal should be displayed
+</div>
+
+<!-- Register Confirmation Modal -->
+<div class="modal fade" id="registerConfirmModal" tabindex="-1" aria-labelledby="registerConfirmModalLabel"
+     aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="post" action="{% url 'login' %}">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title" id="registerConfirmModalLabel">Create Account?</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>User "<span id="modalUsername"></span>" does not exist.</p>
+                    <p>Do you want to create an account with this username and password?</p>
+                    <input type="hidden" name="username" id="modalHiddenUsername">
+                    <input type="hidden" name="password" id="modalHiddenPassword">
+                    <div class="mb-3">
+                        <label for="modalEmail" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="modalEmail" name="email" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" name="confirm_create" class="btn btn-success">Yes, Create Account</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
     {% if show_register_modal %}
-    document.addEventListener('DOMContentLoaded', function() {
-        showRegisterConfirmModal("{{ username }}", "{{ password }}");
-    });
+        document.addEventListener('DOMContentLoaded', function () {
+            showRegisterConfirmModal("{{ username }}", "{{ password }}");
+        });
     {% endif %}
+
+    function showRegisterConfirmModal(username, password) {
+        document.getElementById('modalUsername').textContent = username;
+        document.getElementById('modalHiddenUsername').value = username;
+        document.getElementById('modalHiddenPassword').value = password;
+        let modal = new bootstrap.Modal(document.getElementById('registerConfirmModal'));
+        modal.show();
+    }
 </script>
-    <script>
-        // JavaScript to handle modal display
-        function showRegisterConfirmModal(username, password) {
-            document.getElementById('modalUsername').textContent = username;
-            document.getElementById('modalHiddenUsername').value = username;
-            document.getElementById('modalHiddenPassword').value = password;
-            document.getElementById('registerConfirmModal').style.display = 'block';
-        }
 
-        document.getElementById('closeModal').onclick = function() {
-            document.getElementById('registerConfirmModal').style.display = 'none';
-        };
-
-        window.onclick = function(event) {
-            const modal = document.getElementById('registerConfirmModal');
-            if (event.target === modal) {
-                modal.style.display = 'none';
-            }
-        };
-    </script>
 </body>
 </html>

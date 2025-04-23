@@ -6,11 +6,13 @@ from django.contrib import messages
 from .forms import UserEditForm, UserProfileEditForm
 from .models import UserProfile
 
+
 def login_register(request):
     if request.user.is_authenticated:
         print("User already logged in!")
         return redirect('user_profile')
     return render(request, 'login_register.html')
+
 
 def login_register_view(request):
     if request.method == 'POST':
@@ -39,7 +41,7 @@ def login_register_view(request):
 
         if user is not None:
             login(request, user)
-            return redirect('user_profile')
+            return redirect('index')
         else:
             if not User.objects.filter(username=username).exists():
                 return render(request, 'login_register.html', {
@@ -55,14 +57,17 @@ def login_register_view(request):
 
     # return render(request, 'map1.html')
 
+
 def logout_view(request):
     logout(request)
     messages.success(request, "Logged out successfully!")
     return redirect('login')
 
+
 @login_required
 def user_profile(request):
     return render(request, 'user_profile.html')
+
 
 @login_required
 def edit_user_profile(request):

@@ -16,12 +16,11 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 
-#load environment variable from .env file
+# load environment variable from .env file
 load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
@@ -33,7 +32,6 @@ SECRET_KEY = "django-insecure-f6fk1$!eo@u=1x6(=+3qv=w_67onp6e@v_ii#70h)m630harp_
 DEBUG = True
 
 ALLOWED_HOSTS = ['*']
-
 
 # Application definition
 
@@ -79,7 +77,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "Edu.wsgi.application"
 
-
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
@@ -113,7 +110,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
 # https://docs.djangoproject.com/en/5.1/topics/i18n/
 
@@ -124,7 +120,6 @@ TIME_ZONE = "UTC"
 USE_I18N = True
 
 USE_TZ = True
-
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
@@ -140,8 +135,8 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # API Key
 GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY")
-PREDICTHQ_API_KEY=os.getenv("PREDICTHQ_API_KEY")
-#EVENTBRITE_API_KEY = 'JBMQML2TMZCDKKJ3FJUV'
+PREDICTHQ_API_KEY = os.getenv("PREDICTHQ_API_KEY")
+# EVENTBRITE_API_KEY = 'JBMQML2TMZCDKKJ3FJUV'
 
 # Basic local memory cache (for dev)
 CACHES = {
@@ -150,4 +145,3 @@ CACHES = {
         "LOCATION": "predicthq_cache"
     }
 }
-
