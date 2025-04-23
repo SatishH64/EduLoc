@@ -7,12 +7,14 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from django.core.cache import cache
+
+# from Edu.settings import GOOGLE_MAPS_API_KEY
 from .models import FavoriteLibrary
 import requests
 
 
 def index(request):
-    return render(request, 'index.html')
+    return render(request, 'index.html', {'GOOGLE_MAPS_API_KEY': settings.GOOGLE_MAPS_API_KEY})
 
 
 class NearbySearchView(APIView):
@@ -70,7 +72,7 @@ class NearbySearchView(APIView):
             )
 
         # Log the place types being queried
-        print(f"Querying place types: {place_type}")
+        # print(f"Querying place types: {place_type}")
 
         # Construct Google Places API URL
         api_key = settings.GOOGLE_MAPS_API_KEY
@@ -95,7 +97,7 @@ class NearbySearchView(APIView):
             if query:
                 params["keyword"] = query
 
-            print(f"Making request for type: {p_type}, params: {params}")
+            # print(f"Making request for type: {p_type}, params: {params}")
 
             try:
                 # Make API request
@@ -104,8 +106,8 @@ class NearbySearchView(APIView):
                 places_data = places_response.json()
 
                 # Log raw response for debugging
-                print(
-                    f"Response for {p_type}: status={places_data.get('status')}, results={len(places_data.get('results', []))}")
+                # print(
+                #     f"Response for {p_type}: status={places_data.get('status')}, results={len(places_data.get('results', []))}")
 
                 # Check API response status
                 if places_data.get('status') != 'OK':
@@ -116,7 +118,7 @@ class NearbySearchView(APIView):
 
                 # Add results to the combined list
                 results = places_data.get('results', [])
-                print(f"Found {len(results)} places for type {p_type}")
+                # print(f"Found {len(results)} places for type {p_type}")
                 all_results.extend(results)
 
             except requests.Timeout:
@@ -142,7 +144,7 @@ class NearbySearchView(APIView):
             )
 
         # Log final result count
-        print(f"Total unique places returned: {len(unique_results)}")
+        # print(f"Total unique places returned: {len(unique_results)}")
 
         return Response(
             {
@@ -240,7 +242,7 @@ class EducationEventSearchView(APIView):
 class BookSearchView(APIView):
     def get(self, request):
 
-        print(request)
+        # print(request)
         title = request.query_params.get('title')
         author = request.query_params.get('author')
         # print(request.query_params.get('search-books'))

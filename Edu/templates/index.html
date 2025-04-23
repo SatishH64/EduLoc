@@ -6,9 +6,11 @@
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Educational Resource Finder</title>
+    {#    <script> console.log("{{ GOOGLE_MAPS_API_KEY}}") </script>#}
+    <script
+            src="https://maps.googleapis.com/maps/api/js?key={{ GOOGLE_MAPS_API_KEY }}&callback=initMap" loading="async"
+            defer>
 
-    <script async defer
-            src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCidnDGbdamsCKo2-6oQthbnZvR5iocszY&callback=initMap">
     </script>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -195,6 +197,7 @@
                 </button>
             </li>
         </ul>
+
         <div class="tab-content pt-3" id="resourceTabsContent">
             <div class="tab-pane fade show active" id="libraries" role="tabpanel" aria-labelledby="libraries-tab">
                 <div id="libraries-list">Loading...</div>

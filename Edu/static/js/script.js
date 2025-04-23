@@ -10,9 +10,9 @@ function initMap() {
     map = new google.maps.Map(document.getElementById("map"), {
         center: defaultCenter,
         zoom: 12,
-        // mapTypeControl: true,
-        disableDefaultUI: true,
-        fullscreenControl: true,
+        mapTypeControl: true,
+        // disableDefaultUI: true,
+        // fullscreenControl: true,
     });
 
     // Try to get user location
@@ -784,8 +784,8 @@ function displayBookStores(places) {
 }
 
 // Allow pressing Enter in the search box
-document.getElementById("location-search").addEventListener("keyup", function (event) {
-    if (event.key === "Enter") {
-        document.getElementById("search-button").click();
-    }
-});
+// document.getElementById("location-search").addEventListener("keyup", function (event) {
+//     if (event.key === "Enter") {
+//         document.getElementById("search-button").click();
+//     }
+// });
