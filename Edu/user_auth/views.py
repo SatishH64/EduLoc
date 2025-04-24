@@ -3,6 +3,8 @@ from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+
+from Edu import settings
 from .forms import UserEditForm, UserProfileEditForm
 from .models import UserProfile
 
@@ -53,7 +55,7 @@ def login_register_view(request):
             messages.error(request, "Invalid username or password!")
             return redirect('login')
 
-    return render(request, 'index.html')
+    return redirect('index')
 
     # return render(request, 'map1.html')
 

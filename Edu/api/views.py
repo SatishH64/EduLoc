@@ -6,6 +6,9 @@ from django.http import JsonResponse
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from .models import Place, EducationEvent
+from django.utils.timezone import now
+from datetime import timedelta
 from django.core.cache import cache
 
 # from Edu.settings import GOOGLE_MAPS_API_KEY
@@ -24,15 +27,10 @@ class NearbySearchView(APIView):
         radius = request.query_params.get('radius', '1500')
         place_type = request.query_params.get('type')
         query = request.query_params.get('q')
-        start_date = request.query_params.get('start_date')
-        end_date = request.query_params.get('end_date')
 
         # Validate required location parameter
         if not location:
-            return Response(
-                {"error": "Location parameter is required"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({"error": "Location parameter is required"}, status=status.HTTP_400_BAD_REQUEST)
 
         # Validate and parse location coordinates
         try:
@@ -40,10 +38,8 @@ class NearbySearchView(APIView):
             if not (-90 <= latitude <= 90) or not (-180 <= longitude <= 180):
                 raise ValueError("Invalid latitude or longitude values")
         except ValueError:
-            return Response(
-                {"error": "Invalid location format. Use 'latitude,longitude'"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({"error": "Invalid location format. Use 'latitude,longitude'"},
+                            status=status.HTTP_400_BAD_REQUEST)
 
         # Validate and convert radius
         try:
@@ -51,10 +47,7 @@ class NearbySearchView(APIView):
             if radius <= 0 or radius > 50000:
                 raise ValueError("Radius must be between 1 and 50,000 meters")
         except ValueError:
-            return Response(
-                {"error": "Invalid radius value"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({"error": "Invalid radius value"}, status=status.HTTP_400_BAD_REQUEST)
 
         # Handle place_type: convert to list if string, use default if None
         if place_type:
@@ -63,30 +56,29 @@ class NearbySearchView(APIView):
         else:
             place_type = ['library', 'school', 'university', 'book_store', 'primary_school', 'secondary_school']
 
-        # Validate place_type
-        valid_types = {'library', 'school', 'university', 'book_store', 'primary_school', 'secondary_school'}
-        if not all(pt in valid_types for pt in place_type):
-            return Response(
-                {"error": f"Invalid place type. Must be one of: {', '.join(valid_types)}"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        # Generate cache key
+        cache_key = f"nearby_search:{latitude}:{longitude}:{radius}:{','.join(place_type)}:{query}"
+        cached_places = cache.get(cache_key)
+        if cached_places:
+            return Response({"places": cached_places}, status=status.HTTP_200_OK)
 
-        # Log the place types being queried
-        # print(f"Querying place types: {place_type}")
+        # Query the database for cached results
+        db_places = Place.objects.filter(
+            location__latitude__gte=latitude - 0.01,
+            location__latitude__lte=latitude + 0.01,
+            location__longitude__gte=longitude - 0.01,
+            location__longitude__lte=longitude + 0.01,
+            updated_at__gte=now() - timedelta(days=1)
+        )
 
-        # Construct Google Places API URL
+        # Collect existing place IDs
+        existing_place_ids = set(db_places.values_list('place_id', flat=True))
+
+        # Fetch missing data from the API
         api_key = settings.GOOGLE_MAPS_API_KEY
-        if not api_key:
-            return Response(
-                {"error": "Server configuration error: Missing API key"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-
         base_url = "https://maps.googleapis.com/maps/api/place/nearbysearch/json"
         all_results = []
-        error_messages = []
 
-        # Make API request for each place type
         for p_type in place_type:
             params = {
                 "location": f"{latitude},{longitude}",
@@ -97,62 +89,55 @@ class NearbySearchView(APIView):
             if query:
                 params["keyword"] = query
 
-            # print(f"Making request for type: {p_type}, params: {params}")
-
             try:
-                # Make API request
-                places_response = requests.get(base_url, params=params, timeout=10)
-                places_response.raise_for_status()
-                places_data = places_response.json()
+                response = requests.get(base_url, params=params, timeout=10)
+                response.raise_for_status()
+                places_data = response.json()
 
-                # Log raw response for debugging
-                # print(
-                #     f"Response for {p_type}: status={places_data.get('status')}, results={len(places_data.get('results', []))}")
-
-                # Check API response status
-                if places_data.get('status') != 'OK':
-                    error_message = places_data.get('error_message', 'Unknown error')
-                    error_messages.append(f"API error for type {p_type}: {error_message}")
-                    print(f"Error for {p_type}: {error_message}")
-                    continue
-
-                # Add results to the combined list
-                results = places_data.get('results', [])
-                # print(f"Found {len(results)} places for type {p_type}")
-                all_results.extend(results)
-
-            except requests.Timeout:
-                error_messages.append(f"Timeout for type {p_type}")
-                print(f"Timeout for type {p_type}")
-                continue
+                if places_data.get('status') == 'OK':
+                    results = places_data.get('results', [])
+                    print(results[10]['types'])
+                    for result in results:
+                        if result['place_id'] not in existing_place_ids:
+                            all_results.append({
+                                "place_id": result['place_id'],
+                                'types': result['types'],
+                                "name": result.get('name'),
+                                "latitude": result['geometry']['location']['lat'],
+                                "longitude": result['geometry']['location']['lng'],
+                                "vicinity": result.get('vicinity'),
+                                "rating": result.get('rating'),
+                                "phone_number": result.get('formatted_phone_number'),
+                                "website": result.get('website'),
+                            })
             except requests.RequestException as e:
-                error_messages.append(f"Request error for type {p_type}: {str(e)}")
-                print(f"Request error for type {p_type}: {str(e)}")
-                continue
+                return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        # Remove duplicates based on place_id
-        unique_results = {place['place_id']: place for place in all_results if 'place_id' in place}.values()
-
-        # If no results and errors occurred, return error details
-        if not unique_results and error_messages:
-            return Response(
-                {
-                    "error": "No results found",
-                    "details": error_messages
-                },
-                status=status.HTTP_400_BAD_REQUEST
+        # Save missing data to the database in bulk
+        Place.objects.bulk_create([
+            Place(
+                place_id=place['place_id'],
+                name=place['name'],
+                location=[place['latitude'], place['longitude']],
+                # location={"latitude": result['geometry']['location']['lat'], "longitude": result['geometry']['location']['lng']},
+                # latitude=place['latitude'],
+                # longitude=place['longitude'],
+                rating=place['rating'],
+                types=place['types'],
+                phone_number=place['phone_number'],
+                website=place['website'],
+                vicinity=place['vicinity'],
             )
+            for place in all_results
+        ], ignore_conflicts=True)
 
-        # Log final result count
-        # print(f"Total unique places returned: {len(unique_results)}")
+        # Combine cached and newly fetched data
+        combined_results = list(db_places.values()) + all_results
 
-        return Response(
-            {
-                "places": list(unique_results),
-                "errors": error_messages if error_messages else None
-            },
-            status=status.HTTP_200_OK
-        )
+        # Cache the results
+        cache.set(cache_key, combined_results, timeout=3600)  # Cache for 1 hour
+
+        return Response({"places": combined_results}, status=status.HTTP_200_OK)
 
 
 @csrf_exempt
@@ -175,54 +160,52 @@ class EducationEventSearchView(APIView):
     def get(self, request):
         location = request.query_params.get("location")
         radius = request.query_params.get("radius", "10")
-        # search_term = request.query_params.get("q", "academic")
         start_date = request.query_params.get("start", None)
-        # end_date = request.query_params.get("end", None)
 
         if not location:
             return Response({"error": "Location parameter is required"}, status=status.HTTP_400_BAD_REQUEST)
 
-        lat, lon = location.split(',')
+        lat, lon = map(float, location.split(','))
 
+        # Convert radius to kilometers if needed
         if radius.replace('.', '', 1).isdigit() and not radius.endswith("km"):
             radius = int(radius) // 1000
             radius = f"{radius}km"
 
-        headers = {
-            "Authorization": f"Bearer {settings.PREDICTHQ_API_KEY}"
-        }
-        # get place_id
-        # id_params = {
-        #     "location": f"@{lat},{lon}",
-        #     "offset": 10,
-        # }
-        # place_id = requests.get("https://api.predicthq.com/v1/places/", headers=headers, params=id_params)
-        # response_data = place_id.json()
-        # results = response_data.get("results", [])
-        # print(results)
-        # # id =
-        # print("id",id)
-        # params = {
-        #     "place.scope": f"{id}",
-        #     "category": "academic,conferences,performing-arts,community",
-        #     "sort":"rank",
-        # }
+        # Generate cache key
+        cache_key = f"education_events:{lat}:{lon}:{radius}:{start_date}"
+        cached_events = cache.get(cache_key)
+        if cached_events:
+            return Response(cached_events, status=200)
+
+        # Query database for cached events
+        db_events = EducationEvent.objects.filter(
+            latitude__range=(lat - 0.1, lat + 0.1),
+            longitude__range=(lon - 0.1, lon + 0.1),
+            start__gte=start_date if start_date else now() - timedelta(days=7)
+        )
+
+        if db_events.exists():
+            events = list(db_events.values())
+            cache.set(cache_key, events, timeout=3600)  # Cache for 1 hour
+            return Response(events, status=200)
+
+        # Fetch missing data from the API
+        headers = {"Authorization": f"Bearer {settings.PREDICTHQ_API_KEY}"}
         params = {
             "within": f"{radius}@{lat},{lon}",
             "category": "academic,conferences,performing-arts,community",
             "sort": "rank"
         }
-        print(radius)
         if start_date:
             params["active.gte"] = start_date
-        # if end_date:
-        #     params["start.lte"] = end_date
 
         response = requests.get("https://api.predicthq.com/v1/events/", headers=headers, params=params)
-        # print(response.json())
         if response.status_code != 200:
             return Response({"error": "Failed to fetch events", "details": response.json()},
                             status=response.status_code)
+
+        # Save new events to the database
         events = [
             {
                 "title": e["title"],
@@ -230,12 +213,31 @@ class EducationEventSearchView(APIView):
                 "start": e["start"],
                 "end": e["end"],
                 "category": e["category"],
-                "location": e.get("location"),
+                "latitude": e["location"][0],
+                "longitude": e["location"][1],
                 "description": e.get("description", "")
             }
             for e in response.json().get("results", [])
             if e.get("location")
         ]
+
+        EducationEvent.objects.bulk_create([
+            EducationEvent(
+                title=event["title"],
+                status=event["status"],
+                start=event["start"],
+                end=event["end"],
+                category=event["category"],
+                latitude=event["latitude"],
+                longitude=event["longitude"],
+                description=event["description"]
+            )
+            for event in events
+        ], ignore_conflicts=True)
+
+        # Cache the results
+        cache.set(cache_key, events, timeout=3600)  # Cache for 1 hour
+
         return Response(events, status=200)
 
 

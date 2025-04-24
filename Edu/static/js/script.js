@@ -3,40 +3,42 @@ let markers = [];
 let currentInfoWindow = null;
 let currentPosition = null;
 
+// const radiusSelect = document.getElementById('radius-select');
+// const radius = document.getElementById('radius-value');
+//
+// // Update the value display when the slider is moved
+// radiusSelect.addEventListener('input', function () {
+//     const radiusInKm = radiusSelect.value / 1000; // Convert from meters to kilometers
+//     radius.textContent = `${radiusInKm}km`; // Update the display text
+// });
+
+
 function initMap() {
     // Default center (can be anywhere, user will search or use location)
     const defaultCenter = {lat: 37.7749, lng: -122.4194}; // San Francisco
 
     map = new google.maps.Map(document.getElementById("map"), {
-        center: defaultCenter,
-        zoom: 12,
-        mapTypeControl: true,
-        // disableDefaultUI: true,
+        center: defaultCenter, zoom: 12, mapTypeControl: true, // disableDefaultUI: true,
         // fullscreenControl: true,
     });
 
     // Try to get user location
     if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                const userLocation = {
-                    lat: position.coords.latitude,
-                    lng: position.coords.longitude
-                };
-                map.setCenter(userLocation);
-                setCurrentPosition(userLocation);
-            },
-            () => {
-                console.log("Error: The Geolocation service failed.");
-            }
-        );
+        navigator.geolocation.getCurrentPosition((position) => {
+            const userLocation = {
+                lat: position.coords.latitude, lng: position.coords.longitude
+            };
+            map.setCenter(userLocation);
+            setCurrentPosition(userLocation);
+        }, () => {
+            console.log("Error: The Geolocation service failed.");
+        });
     }
 
     // Allow clicking on map to place marker
     map.addListener("click", (event) => {
         setCurrentPosition({
-            lat: event.latLng.lat(),
-            lng: event.latLng.lng()
+            lat: event.latLng.lat(), lng: event.latLng.lng()
         });
     });
 
@@ -51,8 +53,7 @@ function initMap() {
                 const location = results[0].geometry.location;
                 map.setCenter(location);
                 setCurrentPosition({
-                    lat: location.lat(),
-                    lng: location.lng()
+                    lat: location.lat(), lng: location.lng()
                 });
             } else {
                 alert("Location not found. Please try a different search term.");
@@ -89,18 +90,13 @@ function addCircleToMap(center, radius) {
 
     // Create a new circle
     searchCircle = new google.maps.Circle({
-        map: map,
-        center: center,
-        radius: radius, // Radius in meters
-        fillColor: '#ADD8E6',
-        fillOpacity: 0.35,
-        strokeColor: '#66b8fb',
-        strokeOpacity: 0.8,
-        strokeWeight: 2
+        map: map, center: center, radius: radius, // Radius in meters
+        fillColor: '#ADD8E6', fillOpacity: 0.35, strokeColor: '#66b8fb', strokeOpacity: 0.8, strokeWeight: 2
     });
 
     // Adjust the map view to fit the circle
     map.fitBounds(searchCircle.getBounds());
+
 }
 
 
@@ -124,13 +120,9 @@ function setCurrentPosition(position) {
     currentPosition = position;
 
     const marker = new google.maps.Marker({
-        position: position,
-        map: map,
-        icon: {
+        position: position, map: map, icon: {
             url: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png"
-        },
-        animation: google.maps.Animation.DROP,
-        title: "Selected Location"
+        }, animation: google.maps.Animation.DROP, title: "Selected Location"
     });
 
     markers.push(marker);
@@ -138,6 +130,55 @@ function setCurrentPosition(position) {
     // Fetch resources around this position
     fetchResources();
     addCircleToMap(position, radius);
+
+    // Get the radius slider element
+    const radiusSelect = document.getElementById('radius-select');
+
+// Add an event listener to dynamically update the circle's radius
+    // Add an event listener to dynamically update the circle's radius with animation
+    radiusSelect.addEventListener('input', () => {
+        const newRadius = parseFloat(radiusSelect.value); // Get the new radius value
+        if (searchCircle) {
+            animateRadiusChange(searchCircle, newRadius); // Call the animation function
+            clearMarkers();
+        }
+    });
+
+}
+
+// Function to animate the radius change
+function animateRadiusChange(circle, newRadius) {
+    const currentRadius = circle.getRadius();
+    const steps = 20; // Number of steps for the animation
+    const stepDuration = 10; // Duration of each step in milliseconds
+    const radiusStep = (newRadius - currentRadius) / steps;
+
+    let currentStep = 0;
+
+    const interval = setInterval(() => {
+        currentStep++;
+        const updatedRadius = currentRadius + radiusStep * currentStep;
+        circle.setRadius(updatedRadius);
+
+        if (currentStep >= steps) {
+            clearInterval(interval); // Stop the animation when done
+        }
+    }, stepDuration);
+}
+
+// Ensure radiusSelect is defined
+const radiusSelect = document.getElementById('radius-select');
+
+if (radiusSelect) {
+    // Add an event listener to dynamically update the circle's radius with animation
+    radiusSelect.addEventListener('input', () => {
+        const newRadius = parseFloat(radiusSelect.value); // Get the new radius value
+        if (searchCircle) {
+            animateRadiusChange(searchCircle, newRadius); // Animate the radius change
+        }
+    });
+} else {
+    console.error("Element with ID 'radius-select' not found.");
 }
 
 function clearMarkers() {
@@ -215,7 +256,7 @@ function fetchResources() {
     } else {
         document.getElementById("schools-list").innerHTML = "<p>schools filter is turned off</p>";
     }
-    console.log(startDate, endDate);
+    // console.log(startDate, endDate);
     if (showEvents) {
         // Fetch events
         fetch(`/api/events/education/?location=${location}&radius=${radius}&start=${startDate}&end=${endDate}`)
@@ -292,16 +333,13 @@ function displayLibraries(places) {
     let html = '';
 
     places.forEach(place => {
+        // console.log(place.latitude, place.longitude)
         // Add marker to map
         if (document.getElementById("library-filter").checked) {
             const marker = new google.maps.Marker({
                 position: {
-                    lat: place.geometry.location.lat,
-                    lng: place.geometry.location.lng
-                },
-                map: map,
-                title: place.name,
-                icon: {
+                    lat: place.latitude, lng: place.longitude,
+                }, map: map, title: place.name, icon: {
                     url: "http://maps.google.com/mapfiles/ms/icons/green-dot.png"
                 }
             });
@@ -336,7 +374,6 @@ function displayLibraries(places) {
                         infoWindow.setContent(content);
                     });
             });
-
             markers.push(marker);
         }
 
@@ -356,8 +393,6 @@ function displayLibraries(places) {
 }
 
 function displayEvents(events) {
-    console.log(events);
-
     if (!events || events.length === 0) {
         document.getElementById("events-list").innerHTML = "<p>No educational events found in this area</p>";
         return;
@@ -365,31 +400,37 @@ function displayEvents(events) {
 
     let html = '';
 
-    events.forEach(event => {
-        // Add marker to map
+    // console.log(document.getElementById("event-filter").checked)
 
-        if (document.getElementById("event-filter").checked && event.location) {
+    events.forEach(eve => {
+        // Ensure event has valid latitude and longitude
+
+        console.log(eve.latitude, eve.longitude);
+        if (typeof eve.latitude !== "number" || typeof eve.longitude !== "number") {
+            console.error("Invalid event location:", eve);
+        }
+        if (document.getElementById("event-filter").checked) {
             const marker = new google.maps.Marker({
                 position: {
-                    lat: event.location[1],
-                    lng: event.location[0]
+                    lat: eve.latitude,
+                    lng: eve.longitude,
                 },
                 map: map,
-                title: event.title,
+                title: eve.title,
                 icon: {
                     url: "http://maps.google.com/mapfiles/ms/icons/red-dot.png"
                 }
             });
-
-            const startDate = new Date(event.start).toLocaleDateString();
-            const endDate = new Date(event.end).toLocaleDateString();
+            console.log(marker.map)
+            const startDate = new Date(eve.start).toLocaleDateString();
+            const endDate = new Date(eve.end).toLocaleDateString();
 
             const infoWindow = new google.maps.InfoWindow({
                 content: `<div>
-                            <h5>${event.title}</h5>
+                            <h5>${eve.title}</h5>
                             <p>From: ${startDate} to ${endDate}</p>
-                            <p>Category: ${event.category}</p>
-                            ${event.description ? `<p>${event.description}</p>` : ''}
+                            <p>Category: ${eve.category}</p>
+                            ${eve.description ? `<p>${eve.description}</p>` : ''}
                         </div>`
             });
 
@@ -401,22 +442,23 @@ function displayEvents(events) {
                 currentInfoWindow = infoWindow;
             });
 
+
             markers.push(marker);
         }
 
         // Format dates
-        const startDate = new Date(event.start).toLocaleDateString();
-        const endDate = new Date(event.end).toLocaleDateString();
+        const startDate = new Date(eve.start).toLocaleDateString();
+        const endDate = new Date(eve.end).toLocaleDateString();
 
         // Add to list
         html += `
                 <div class="resource-item">
-                    <h5>${event.title}</h5>
+                    <h5>${eve.title}</h5>
                     <p>From: ${startDate} to ${endDate}</p>
                     <div>
-                        <span class="badge bg-primary">${event.category}</span>
+                        <span class="badge bg-primary">${eve.category}</span>
                     </div>
-                    ${event.description ? `<p class="mt-2">${event.description.substring(0, 100)}${event.description.length > 100 ? '...' : ''}</p>` : ''}
+                    ${eve.description ? `<p class="mt-2">${eve.description.substring(0, 100)}${eve.description.length > 100 ? '...' : ''}</p>` : ''}
                 </div>`;
     });
 
@@ -436,12 +478,8 @@ function displayUniversities(places) {
         if (document.getElementById("universities-filter").checked) {
             const marker = new google.maps.Marker({
                 position: {
-                    lat: place.geometry.location.lat,
-                    lng: place.geometry.location.lng
-                },
-                map: map,
-                title: place.name,
-                icon: {
+                    lat: place.latitude, lng: place.longitude,
+                }, map: map, title: place.name, icon: {
                     url: "http://maps.google.com/mapfiles/ms/icons/yellow-dot.png"
                 }
             });
@@ -508,12 +546,8 @@ function displaySchools(places) {
         if (document.getElementById("schools-filter").checked) {
             const marker = new google.maps.Marker({
                 position: {
-                    lat: place.geometry.location.lat,
-                    lng: place.geometry.location.lng
-                },
-                map: map,
-                title: place.name,
-                icon: {
+                    lat: place.latitude, lng: place.longitude,
+                }, map: map, title: place.name, icon: {
                     url: "http://maps.google.com/mapfiles/ms/icons/purple-dot.png"
                 }
             });
@@ -580,18 +614,16 @@ function displayPrimarySchools(places) {
         if (document.getElementById("primary-schools-filter").checked) {
             const marker = new google.maps.Marker({
                 position: {
-                    lat: place.geometry.location.lat,
-                    lng: place.geometry.location.lng
-                },
-                map: map,
-                title: place.name,
-                icon: {
+                    lat: place.latitude, lng: place.longitude,
+                }, map: map, title: place.name, icon: {
                     url: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png"
                 }
             });
-
+            // console.log(place);
             const infoWindow = new google.maps.InfoWindow({
-                content: `<div><h5>${place.name}</h5><p>${place.vicinity}</p></div>`
+                content: `<div><h5>${place.name}</h5
+                               <p>${place.types[0]}</p>   
+                          </div>`
             });
 
             marker.addListener("click", () => {
@@ -606,7 +638,7 @@ function displayPrimarySchools(places) {
                     .then(response => response.json())
                     .then(data => {
                         const result = data.result || {};
-                        let content = `<div><h5>${place.name}</h5><p>${place.vicinity}</p>`;
+                        let content = `<div><h5>${place.name}</h5><p>${place.types[0]}</p>`;
 
                         if (result.formatted_phone_number) {
                             content += `<p>Phone: ${result.formatted_phone_number}</p>`;
@@ -620,7 +652,7 @@ function displayPrimarySchools(places) {
                         infoWindow.setContent(content);
                     });
             });
-
+            console.log(marker.map)
             markers.push(marker);
         }
 
@@ -652,12 +684,8 @@ function displaySecondarySchools(places) {
         if (document.getElementById("secondary-schools-filter").checked) {
             const marker = new google.maps.Marker({
                 position: {
-                    lat: place.geometry.location.lat,
-                    lng: place.geometry.location.lng
-                },
-                map: map,
-                title: place.name,
-                icon: {
+                    lat: place.latitude, lng: place.longitude,
+                }, map: map, title: place.name, icon: {
                     url: "http://maps.google.com/mapfiles/ms/icons/red-dot.png"
                 }
             });
@@ -724,12 +752,8 @@ function displayBookStores(places) {
         if (document.getElementById("bookstores-filter").checked) {
             const marker = new google.maps.Marker({
                 position: {
-                    lat: place.geometry.location.lat,
-                    lng: place.geometry.location.lng
-                },
-                map: map,
-                title: place.name,
-                icon: {
+                    lat: place.latitude, lng: place.longitude,
+                }, map: map, title: place.name, icon: {
                     url: "http://maps.google.com/mapfiles/ms/icons/orange-dot.png"
                 }
             });
