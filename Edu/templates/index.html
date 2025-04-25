@@ -73,6 +73,7 @@
     </div>
 </nav>
 
+
 <!-- Modal for Profile -->
 <div id="profile-modal" class="profile-modal d-none">
     <div class="modal-overlay"></div>
@@ -140,8 +141,57 @@
     </div>
 </div>
 
+<section class="hero-section text-center text-white d-flex align-items-center justify-content-center flex-column"
+         style="background: linear-gradient(135deg, #3c8dbc, #6cc1ff); height: 100vh; padding: 2rem;">
+    <div class="container">
+        <h1 class="display-4 fw-bold mb-3">Find Local Educational Resources</h1>
+        <p class="lead mb-4">Explore libraries, schools, workshops, and more in your area.</p>
+        <a href="#main" class="btn btn-lg btn-light px-5">Start Exploring</a>
+    </div>
+</section>
 
-<div class="main-container">
+<!-- Features Section -->
+<section class="features-section py-5 bg-light" id="learn-more">
+    <div class="container">
+        <div class="row text-center mb-5">
+            <div class="col">
+                <h2 class="fw-bold">What You Can Discover</h2>
+                <p class="text-muted">Tailored educational opportunities right around the corner.</p>
+            </div>
+        </div>
+        <div class="row text-center g-4">
+            <div class="col-md-4">
+                <div class="card h-100 shadow-sm p-3 border-0">
+                    <div class="card-body">
+                        <h5 class="card-title">📚 Libraries & Bookstores</h5>
+                        <p class="card-text text-muted">Locate community libraries, bookstores, and reading hubs near
+                            you.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100 shadow-sm p-3 border-0">
+                    <div class="card-body">
+                        <h5 class="card-title">🏫 Schools & Universities</h5>
+                        <p class="card-text text-muted">Get info on primary, secondary schools, and universities in your
+                            area.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100 shadow-sm p-3 border-0">
+                    <div class="card-body">
+                        <h5 class="card-title">🎟️ Events & Workshops</h5>
+                        <p class="card-text text-muted">Find educational events, workshops, and seminars happening
+                            nearby.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="main-container" id="main">
     <div class="left-panel">
         <div id="map"></div>
     </div>
@@ -293,6 +343,56 @@
     </div>
 </div>
 <div id="book-covers-container" class="row mt-4"></div>
+
+
+<!-- Call to Action Section -->
+<section class="cta-section">
+    <div class="cta-content">
+        <h2>Ready to Explore Educational Resources Near You?</h2>
+        <p>Discover libraries, workshops, and events tailored to your interests and location.</p>
+        <div class="cta-buttons">
+            <a href="#explore" class="btn primary">🚀 Get Started</a>
+            <a href="#learn-more" class="btn secondary">📚 Learn More</a>
+        </div>
+    </div>
+</section>
+
+<!-- Footer Section -->
+<footer class="site-footer">
+    <div class="footer-container">
+        <div class="footer-col">
+            <h3>📘 Educational Resource Finder</h3>
+            <p>Your gateway to discovering local libraries, educational events, and workshops. Learn more, grow more,
+                explore more.</p>
+        </div>
+        <div class="footer-col">
+            <h4>Quick Links</h4>
+            <ul>
+                <li><a href="#about">About Us</a></li>
+                <li><a href="#contact">Contact</a></li>
+                <li><a href="#faq">FAQs</a></li>
+            </ul>
+        </div>
+        <div class="footer-col">
+            <h4>Resources</h4>
+            <ul>
+                <li><a href="#">Google Maps API</a></li>
+                <li><a href="#">OpenLibrary</a></li>
+                <li><a href="#">Eventbrite</a></li>
+            </ul>
+        </div>
+        <div class="footer-col">
+            <h4>Stay Connected</h4>
+            <form class="subscribe-form">
+                <input type="email" placeholder="Your email address">
+                <button type="submit">Subscribe</button>
+            </form>
+        </div>
+    </div>
+    <div class="footer-bottom">
+        © 2025 Educational Resource Finder. All rights reserved.
+    </div>
+</footer>
 
 <script src="{% static 'js/script.js' %}"></script>
 
