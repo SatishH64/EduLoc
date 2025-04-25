@@ -404,8 +404,7 @@ function displayEvents(events) {
 
     events.forEach(eve => {
         // Ensure event has valid latitude and longitude
-
-        console.log(eve.latitude, eve.longitude);
+        // console.log(eve);
         if (typeof eve.latitude !== "number" || typeof eve.longitude !== "number") {
             console.error("Invalid event location:", eve);
         }
@@ -421,7 +420,7 @@ function displayEvents(events) {
                     url: "http://maps.google.com/mapfiles/ms/icons/red-dot.png"
                 }
             });
-            console.log(marker.map)
+            // console.log(marker.map)
             const startDate = new Date(eve.start).toLocaleDateString();
             const endDate = new Date(eve.end).toLocaleDateString();
 
@@ -652,7 +651,7 @@ function displayPrimarySchools(places) {
                         infoWindow.setContent(content);
                     });
             });
-            console.log(marker.map)
+            // console.log(marker.map)
             markers.push(marker);
         }
 
