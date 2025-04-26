@@ -386,6 +386,10 @@ function displayLibraries(places) {
                         <span class="badge bg-info">${place.rating ? place.rating + '★' : 'No rating'}</span>
                         ${place.open_now ? '<span class="badge bg-success">Open Now</span>' : ''}
                     </div>
+                    <div>
+<!--                    <a href="api/library/" class="btn btn-primary btn-sm">details</a>-->
+                        <a href="api/library-details/${place.place_id}" class="btn btn-primary btn-sm">View Details</a>
+                    </div>
                 </div>`;
     });
 
@@ -807,8 +811,8 @@ function displayBookStores(places) {
 }
 
 // Allow pressing Enter in the search box
-// document.getElementById("location-search").addEventListener("keyup", function (event) {
-//     if (event.key === "Enter") {
-//         document.getElementById("search-button").click();
-//     }
-// });
+document.getElementById("location-search").addEventListener("keyup", function (event) {
+    if (event.key === "Enter") {
+        document.getElementById("search-button").click();
+    }
+});

@@ -8,4 +8,6 @@ urlpatterns = [
     path('nearby-search/', NearbySearchView.as_view(), name='nearby-search'),
     path('search-books/', BookSearchView.as_view(), name='search-books'),
     path("events/education/", EducationEventSearchView.as_view(), name="education-events"),
+    path("library/", library, name="library"),
+    path("library-details/<str:library_id>/", library_details, name="library-details"),
 ]

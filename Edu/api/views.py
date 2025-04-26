@@ -8,6 +8,8 @@ from rest_framework.response import Response
 from rest_framework import status
 import requests
 
+from api.models import Place
+
 
 def index(request):
     return render(request, 'index.html', {'GOOGLE_MAPS_API_KEY': settings.GOOGLE_MAPS_API_KEY})
@@ -145,11 +147,42 @@ class EducationEventSearchView(APIView):
 
         return Response(events, status=200)
 
+def library(request):
+    library_data = {
+        "library_id": "nanaaaa",
+        "name": "lib.name",
+        "address": "lib.vicinity"
+    }
+    return render(request, 'library.html', {'library_data': library_data})
+
+def library_details(request,library_id):
+    # library_id = request.GET.get("id")
+    # print("Library ID:", library_id)
+    if not library_id:
+        return JsonResponse({"error": "Library ID is required"}, status=400)
+
+    try:
+        # Fetch the library details from the database
+        lib = Place.objects.get(place_id=library_id)
+        library_data = {
+            "library_id": lib.place_id,
+            "name": lib.name,
+            "address": lib.vicinity,
+            # "facilities": lib.facilities.split(",")  # Assuming facilities are stored as a comma-separated string
+        }
+        return render(request, 'library.html', {'library': library_data})
+        # return JsonResponse(library_data, status=200)
+    except Place.DoesNotExist:
+        return JsonResponse({"error": "Library not found"}, status=404)
 
 class BookSearchView(APIView):
     def get(self, request):
+        # library_id = request.GET.get("library_id")
         title = request.query_params.get('title')
         author = request.query_params.get('author')
+        # print("Title:", title,author)
+        # if not library_id:
+        #     return JsonResponse({"error": "Library ID is required"}, status=400)
 
         if not author and not title:
             return Response({"error": "Please provide author or title of the book."},
@@ -180,7 +213,7 @@ class BookSearchView(APIView):
                 "key": item.get("key", None)
             })
 
-        return Response({"books": books})
+        return JsonResponse({"books": books})
 
 
 @login_required
