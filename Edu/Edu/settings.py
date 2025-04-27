@@ -55,6 +55,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "api.middleware.CacheMonitorMiddleware",  # My middleware for cache monitoring
 ]
 
 ROOT_URLCONF = "Edu.urls"
@@ -80,12 +81,25 @@ WSGI_APPLICATION = "Edu.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
+# }
+
+
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'eduloc',
+        'USER': 'satish',
+        'PASSWORD': 'satish',
+        'HOST': 'localhost',
+        'PORT': '5432',
     }
 }
+
 
 AUTHENTICATION_BACKENDS = [
     'user_auth.backends.WebsiteUserBackend',  # Custom backend for website users
@@ -138,10 +152,23 @@ GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY")
 PREDICTHQ_API_KEY = os.getenv("PREDICTHQ_API_KEY")
 # EVENTBRITE_API_KEY = 'JBMQML2TMZCDKKJ3FJUV'
 
-# Basic local memory cache (for dev)
+# Cache
+# CACHES = {
+#     'default': {
+#         'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+#         'LOCATION': 'unique-snowflake',
+#     }
+# }
+
 CACHES = {
-    "default": {
-        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
-        "LOCATION": "predicthq_cache"
+    'default': {
+        'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
+        'LOCATION': 'django_cache_table',
+        'TIMEOUT': 3600,  # 1 hour cache duration
+        'OPTIONS': {
+            'MAX_ENTRIES': 1000,
+            'CULL_FREQUENCY': 2,  # Delete 1/2 of entries when max is reached
+        }
     }
 }
+

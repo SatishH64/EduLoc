@@ -6,7 +6,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>User Profile</title>
     <link rel="stylesheet" href="{% static 'css/user_profile.css' %}">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <!-- Add favicon link to prevent 404 error -->
+    <link rel="icon" href="{% static 'favicon.ico' %}" type="image/x-icon">
 </head>
 <body>
     <nav class="navbar">
@@ -30,80 +33,111 @@
     </script>
 
     <div class="container rounded bg-white mt-5 mb-5">
-        <form method="post">
-            {% csrf_token %}
-            <div class="row">
-                <div class="col-md-3 border-right">
-                    <div class="d-flex flex-column align-items-center text-center p-3 py-5">
-                        <img class="rounded-circle mt-5" width="150px" src="https://st3.depositphotos.com/15648834/17930/v/600/depositphotos_179308454-stock-illustration-unknown-person-silhouette-glasses-profile.jpg">
-                        <span class="font-weight-bold">{{ user.first_name }} {{ user.last_name }}</span>
-                        <span class="text-black-50">{{ user.email }}</span>
-                    </div>
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
-                <div class="col-md-9">
-                    <div class="p-3 py-5">
-                        <h4 class="text-right">User Profile</h4>
+            {% endfor %}
+        {% endif %}
 
-                        <!-- Editable Fields -->
+        <div class="row">
+            <div class="col-md-3 border-right">
+                <div class="d-flex flex-column align-items-center text-center p-3 py-5">
+                    <img class="rounded-circle mt-5" width="150px" src="https://st3.depositphotos.com/15648834/17930/v/600/depositphotos_179308454-stock-illustration-unknown-person-silhouette-glasses-profile.jpg">
+                    <span class="font-weight-bold">{{ user.first_name }} {{ user.last_name }}</span>
+                    <span class="text-black-50">{{ user.email }}</span>
+                </div>
+            </div>
+            <div class="col-md-9">
+                <div class="p-3 py-5">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h4 class="text-right">User Profile</h4>
+                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#editProfileModal">
+                            <i class="bi bi-pencil-square"></i> Edit Profile
+                        </button>
+                    </div>
+
+                    <!-- Display Profile Information -->
+                    <div class="profile-info">
                         <div class="row mt-3">
                             <div class="col-md-6">
                                 <label class="labels">First Name</label>
-                                <input type="text" class="form-control" name="first_name" value="{{ user.first_name }}">
+                                <p class="form-control-static">{{ user.first_name }}</p>
                             </div>
                             <div class="col-md-6">
                                 <label class="labels">Last Name</label>
-                                <input type="text" class="form-control" name="last_name" value="{{ user.last_name }}">
+                                <p class="form-control-static">{{ user.last_name }}</p>
                             </div>
                         </div>
                         <div class="row mt-3">
                             <div class="col-md-12">
                                 <label class="labels">Email</label>
-                                <input type="email" class="form-control" name="email" value="{{ user.email }}">
+                                <p class="form-control-static">{{ user.email }}</p>
                             </div>
                         </div>
                         <div class="row mt-3">
                             <div class="col-md-6">
                                 <label class="labels">Phone Number</label>
-                                <input type="text" class="form-control" name="phone_number" value="{{ user.profile.phone_number }}">
+                                <p class="form-control-static">{{ user.profile.phone_number|default:'Not provided' }}</p>
                             </div>
                             <div class="col-md-6">
                                 <label class="labels">Gender</label>
-                                <select class="form-control" name="gender">
-                                    <option value="Male" {% if user.profile.gender == "Male" %}selected{% endif %}>Male</option>
-                                    <option value="Female" {% if user.profile.gender == "Female" %}selected{% endif %}>Female</option>
-                                    <option value="Other" {% if user.profile.gender == "Other" %}selected{% endif %}>Other</option>
-                                </select>
+                                <p class="form-control-static">{{ user.profile.gender|default:'Not specified' }}</p>
                             </div>
                         </div>
                         <div class="row mt-3">
                             <div class="col-md-12">
                                 <label class="labels">Address</label>
-                                <textarea class="form-control" name="address">{{ user.profile.address }}</textarea>
+                                <p class="form-control-static">{{ user.profile.address|default:'Not provided' }}</p>
                             </div>
                         </div>
+                    </div>
 
-                        <!-- Save Button -->
-                        <div class="mt-5 text-center">
-                            <button type="submit" class="btn btn-success">Save Changes</button>
+                    <!-- Favorites Section -->
+                    <div class="card shadow mt-4">
+                        <div class="card-header bg-primary text-white">
+                            <h3 class="mb-0">My Favorite Libraries</h3>
                         </div>
-
-                        <!-- Favorites Section -->
-                        <div class="mt-5">
-                            <h5>Favorite Libraries</h5>
-                            <ul class="list-group">
-                                {% for library in favorite_libraries %}
-                                    <li class="list-group-item">
-                                        <strong>{{ library.library_name }}</strong><br>
-                                        {{ library.library_address }}
-                                    </li>
-                                {% empty %}
-                                    <li class="list-group-item">No favorite libraries added yet.</li>
-                                {% endfor %}
-                            </ul>
+                        <div class="card-body favorite-libraries">
+                            {% if favorite_libraries %}
+                                <div class="list-group" id="favorites-container">
+                                    {% for library in favorite_libraries %}
+                                        <div class="list-group-item library-item" data-library-id="{{ library.library_id }}">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <h5>{{ library.library_name }}</h5>
+                                                    <p class="mb-1">{{ library.library_address }}</p>
+                                                </div>
+                                                <div class="btn-group" role="group">
+                                                    <a href="/api/library-details/{{ library.library_id }}" class="btn btn-primary btn-sm">
+                                                        <i class="bi bi-info-circle"></i> View
+                                                    </a>
+                                                    <button type="button" class="btn btn-danger btn-sm unfavorite-btn"
+                                                            data-library-id="{{ library.library_id }}"
+                                                            data-library-name="{{ library.library_name }}"
+                                                            data-library-address="{{ library.library_address }}">
+                                                        <i class="bi bi-heart-break"></i> Unfavorite
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <div id="no-favorites-message">
+                                    <p>You haven't added any libraries to your favorites yet.</p>
+                                </div>
+                            {% endif %}
                         </div>
+                    </div>
 
-                        <div class="mt-5">
-                            <h5>Favorite Books</h5>
+                    <div class="card mt-4">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">Favorite Books</h5>
+                        </div>
+                        <div class="card-body">
                             <ul class="list-group">
                                 {% for book in favorite_books %}
                                     <li class="list-group-item">
@@ -115,9 +149,13 @@
                                 {% endfor %}
                             </ul>
                         </div>
+                    </div>
 
-                        <div class="mt-5">
-                            <h5>Favorite Events</h5>
+                    <div class="card mt-4 mb-4">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">Favorite Events</h5>
+                        </div>
+                        <div class="card-body">
                             <ul class="list-group">
                                 {% for event in favorite_events %}
                                     <li class="list-group-item">
@@ -133,10 +171,307 @@
                     </div>
                 </div>
             </div>
-        </form>
+        </div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Profile Edit Modal -->
+    <div class="modal fade" id="editProfileModal" tabindex="-1" aria-labelledby="editProfileModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editProfileModalLabel">Edit Profile</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="profileEditForm" method="post" novalidate>
+                        {% csrf_token %}
+                        <!-- Validation alerts container -->
+                        <div id="validation-alerts"></div>
+
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <label class="labels" for="id_first_name">First Name</label>
+                                <input type="text" class="form-control" id="id_first_name" name="first_name" value="{{ user.first_name }}" required>
+                                <div class="invalid-feedback">Please enter your first name.</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="labels" for="id_last_name">Last Name</label>
+                                <input type="text" class="form-control" id="id_last_name" name="last_name" value="{{ user.last_name }}" required>
+                                <div class="invalid-feedback">Please enter your last name.</div>
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-md-12">
+                                <label class="labels" for="id_email">Email</label>
+                                <input type="email" class="form-control" id="id_email" name="email" value="{{ user.email }}" required>
+                                <div class="invalid-feedback" id="email-feedback">Please enter a valid email address.</div>
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <label class="labels" for="id_phone_number">Phone Number</label>
+                                <input type="text" class="form-control" id="id_phone_number" name="phone_number" value="{{ user.profile.phone_number|default:'' }}">
+                                <div class="invalid-feedback">Please enter a valid phone number.</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="labels" for="id_gender">Gender</label>
+                                <select class="form-control" id="id_gender" name="gender">
+                                    <option value="" {% if not user.profile.gender %}selected{% endif %}>Select Gender</option>
+                                    <option value="Male" {% if user.profile.gender == "Male" %}selected{% endif %}>Male</option>
+                                    <option value="Female" {% if user.profile.gender == "Female" %}selected{% endif %}>Female</option>
+                                    <option value="Other" {% if user.profile.gender == "Other" %}selected{% endif %}>Other</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-md-12">
+                                <label class="labels" for="id_address">Address</label>
+                                <textarea class="form-control" id="id_address" name="address">{{ user.profile.address|default:'' }}</textarea>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-success" id="saveProfileChanges">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Add JavaScript for unfavorite functionality and form validation -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Unfavorite functionality
+        const unfavoriteButtons = document.querySelectorAll('.unfavorite-btn');
+        unfavoriteButtons.forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+
+                const libraryId = this.getAttribute('data-library-id');
+                const libraryName = this.getAttribute('data-library-name');
+                const libraryAddress = this.getAttribute('data-library-address');
+                const libraryItem = this.closest('.library-item');
+
+                if (confirm(`Remove "${libraryName}" from your favorites?`)) {
+                    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+                    fetch('/api/toggle-favorite-library/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'X-CSRFToken': csrfToken
+                        },
+                        body: `library_id=${encodeURIComponent(libraryId)}&library_name=${encodeURIComponent(libraryName)}&library_address=${encodeURIComponent(libraryAddress)}`
+                    })
+                    .then(response => {
+                        // First check if the response is ok before trying to parse JSON
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! Status: ${response.status}`);
+                        }
+                        // Check content type to handle non-JSON responses
+                        const contentType = response.headers.get('content-type');
+                        if (contentType && contentType.includes('application/json')) {
+                            return response.json();
+                        } else {
+                            // Handle HTML or other response types
+                            throw new Error('Received non-JSON response from server');
+                        }
+                    })
+                    .then(data => {
+                        if (data.status === 'removed') {
+                            libraryItem.style.transition = 'all 0.5s';
+                            libraryItem.style.opacity = '0';
+                            libraryItem.style.maxHeight = '0';
+                            libraryItem.style.padding = '0';
+                            libraryItem.style.margin = '0';
+                            libraryItem.style.overflow = 'hidden';
+
+                            setTimeout(() => {
+                                libraryItem.remove();
+                                const remainingItems = document.querySelectorAll('.library-item');
+                                if (remainingItems.length === 0) {
+                                    const favoritesContainer = document.getElementById('favorites-container');
+                                    if (favoritesContainer) {
+                                        favoritesContainer.innerHTML = '<div id="no-favorites-message"><p>You haven\'t added any libraries to your favorites yet.</p></div>';
+                                    }
+                                }
+                            }, 500);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('An error occurred while updating favorites. Please refresh the page and try again.');
+                    });
+                }
+            });
+        });
+
+        // Form validation variables
+        const form = document.getElementById('profileEditForm');
+        const firstNameInput = document.getElementById('id_first_name');
+        const lastNameInput = document.getElementById('id_last_name');
+        const emailInput = document.getElementById('id_email');
+        const phoneInput = document.getElementById('id_phone_number');
+        const alertsContainer = document.getElementById('validation-alerts');
+        const saveButton = document.getElementById('saveProfileChanges');
+
+        // Email validation regex
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        // Phone validation regex - accepts various formats
+        const phoneRegex = /^(\+\d{1,3}[- ]?)?\d{10,14}$/;
+
+        // Function to validate form
+        function validateForm() {
+            let isValid = true;
+            alertsContainer.innerHTML = ''; // Clear previous alerts
+
+            // Reset validation states
+            firstNameInput.classList.remove('is-invalid');
+            lastNameInput.classList.remove('is-invalid');
+            emailInput.classList.remove('is-invalid');
+            phoneInput.classList.remove('is-invalid');
+
+            // First name validation
+            if (!firstNameInput.value.trim()) {
+                firstNameInput.classList.add('is-invalid');
+                isValid = false;
+            }
+
+            // Last name validation
+            if (!lastNameInput.value.trim()) {
+                lastNameInput.classList.add('is-invalid');
+                isValid = false;
+            }
+
+            // Email validation
+            if (!emailInput.value.trim() || !emailRegex.test(emailInput.value.trim())) {
+                emailInput.classList.add('is-invalid');
+                isValid = false;
+            }
+
+            // Phone validation (only if provided)
+            if (phoneInput.value.trim() && !phoneRegex.test(phoneInput.value.trim())) {
+                phoneInput.classList.add('is-invalid');
+                isValid = false;
+            }
+
+            return isValid;
+        }
+
+        // Submit handler
+        saveButton.addEventListener('click', function() {
+            if (validateForm()) {
+                // If form validation passes, submit the form
+                form.submit();
+            } else {
+                // Show general alert for validation errors
+                alertsContainer.innerHTML = `
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        Please fix the highlighted errors before submitting.
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                `;
+            }
+        });
+
+        // Input event listeners for real-time validation
+        firstNameInput.addEventListener('input', function() {
+            if (this.value.trim()) {
+                this.classList.remove('is-invalid');
+            }
+        });
+
+        lastNameInput.addEventListener('input', function() {
+            if (this.value.trim()) {
+                this.classList.remove('is-invalid');
+            }
+        });
+
+        emailInput.addEventListener('input', function() {
+            if (this.value.trim() && emailRegex.test(this.value.trim())) {
+                this.classList.remove('is-invalid');
+            }
+        });
+
+        phoneInput.addEventListener('input', function() {
+            if (!this.value.trim() || phoneRegex.test(this.value.trim())) {
+                this.classList.remove('is-invalid');
+            }
+        });
+    });
+    </script>
+
+    <style>
+    /* Add some transitions for smoother unfavoriting */
+    .library-item {
+        transition: all 0.3s ease;
+    }
+
+    .unfavorite-btn {
+        transition: all 0.2s;
+    }
+
+    .unfavorite-btn:hover {
+        background-color: #c82333;
+    }
+
+    /* Profile info display styles */
+    .profile-info .form-control-static {
+        padding: 0.375rem 0.75rem;
+        background-color: #f8f9fa;
+        border-radius: 0.25rem;
+        min-height: 38px;
+        margin-bottom: 0;
+    }
+
+    .labels {
+        font-weight: 600;
+        color: #495057;
+    }
+
+    /* Form validation styles */
+    .is-invalid {
+        border-color: #dc3545;
+        padding-right: calc(1.5em + 0.75rem);
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23dc3545'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23dc3545' stroke='none'/%3e%3c/svg%3e");
+        background-repeat: no-repeat;
+        background-position: right calc(0.375em + 0.1875rem) center;
+        background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+    }
+
+    .invalid-feedback {
+        display: none;
+        width: 100%;
+        margin-top: 0.25rem;
+        font-size: 0.875em;
+        color: #dc3545;
+    }
+
+    .is-invalid ~ .invalid-feedback {
+        display: block;
+    }
+
+    /* Improve layout on mobile */
+    @media (max-width: 576px) {
+        .library-item .d-flex {
+            flex-direction: column;
+            align-items: flex-start !important;
+        }
+
+        .library-item .btn-group {
+            margin-top: 10px;
+            width: 100%;
+            display: flex;
+        }
+
+        .library-item .btn-group .btn {
+            flex: 1;
+        }
+    }
+    </style>
 </body>
 </html>

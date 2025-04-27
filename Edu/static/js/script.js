@@ -1,17 +1,170 @@
+// Cache implementation
+const appCache = {
+    // Initialize cache
+    init: function() {
+        this.cachePrefix = 'edu_loc_cache_';
+        this.defaultExpiry = 30; // minutes
+
+        // Add cache controls to UI
+        this.addCacheControls();
+
+        console.log('Cache system initialized');
+        return this;
+    },
+
+    // Generate a cache key
+    key: function(type, params) {
+        return this.cachePrefix + type + '_' + JSON.stringify(params);
+    },
+
+    // Set item in cache
+    set: function(type, params, data, expiryMinutes = this.defaultExpiry) {
+        const key = this.key(type, params);
+        const item = {
+            data: data,
+            timestamp: new Date().getTime(),
+            expiry: new Date().getTime() + (expiryMinutes * 60 * 1000)
+        };
+
+        try {
+            localStorage.setItem(key, JSON.stringify(item));
+            // console.log(`Cached: ${key} (expires in ${expiryMinutes} min)`);
+            return true;
+        } catch (e) {
+            console.error('Cache error:', e);
+            // If the cache is full, clear older items
+            this.pruneCache();
+            try {
+                localStorage.setItem(key, JSON.stringify(item));
+                return true;
+            } catch (e) {
+                console.error('Cache still failed after pruning:', e);
+                return false;
+            }
+        }
+    },
+
+    // Get item from cache
+    get: function(type, params) {
+        const key = this.key(type, params);
+        try {
+            const item = localStorage.getItem(key);
+            if (!item) return null;
+
+            const parsedItem = JSON.parse(item);
+            const now = new Date().getTime();
+
+            // Check if item is expired
+            if (now > parsedItem.expiry) {
+                console.log(`Cache expired: ${key}`);
+                this.remove(key);
+                return null;
+            }
+
+            console.log(`Cache hit: ${key}`);
+            return parsedItem.data;
+        } catch (e) {
+            console.error('Cache retrieval error:', e);
+            return null;
+        }
+    },
+
+    // Remove item from cache
+    remove: function(key) {
+        if (key.startsWith(this.cachePrefix)) {
+            localStorage.removeItem(key);
+        } else {
+            localStorage.removeItem(this.cachePrefix + key);
+        }
+    },
+
+    // Clear all cache
+    clear: function() {
+        const keys = [];
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && key.startsWith(this.cachePrefix)) {
+                keys.push(key);
+            }
+        }
+
+        keys.forEach(key => localStorage.removeItem(key));
+        console.log(`Cleared ${keys.length} items from cache`);
+
+        // Refresh all data
+        if (currentPosition) {
+            fetchResources();
+        }
+
+        return keys.length;
+    },
+
+    // Remove oldest items to make space
+    pruneCache: function() {
+        const cacheItems = [];
+        // Get all cache items
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && key.startsWith(this.cachePrefix)) {
+                try {
+                    const item = JSON.parse(localStorage.getItem(key));
+                    cacheItems.push({
+                        key: key,
+                        timestamp: item.timestamp
+                    });
+                } catch (e) {
+                    // If item is corrupt, remove it
+                    localStorage.removeItem(key);
+                }
+            }
+        }
+
+        // Sort by age (oldest first)
+        cacheItems.sort((a, b) => a.timestamp - b.timestamp);
+
+        // Remove oldest 30% of items
+        const itemsToRemove = Math.ceil(cacheItems.length * 0.3);
+        for (let i = 0; i < itemsToRemove; i++) {
+            if (cacheItems[i]) {
+                localStorage.removeItem(cacheItems[i].key);
+            }
+        }
+
+        console.log(`Pruned ${itemsToRemove} old cache items`);
+    },
+
+    // Add cache control UI
+    addCacheControls: function() {
+        // Add a button to clear cache
+        document.addEventListener('DOMContentLoaded', () => {
+            const container = document.querySelector('.map-controls') || document.body;
+
+            const refreshBtn = document.createElement('button');
+            refreshBtn.className = 'btn btn-sm btn-warning clear-cache-btn';
+            refreshBtn.innerHTML = '<i class="fas fa-sync"></i> Refresh Data';
+            refreshBtn.style.position = 'fixed';
+            refreshBtn.style.bottom = '20px';
+            refreshBtn.style.right = '20px';
+            refreshBtn.style.zIndex = '1000';
+
+            refreshBtn.addEventListener('click', () => {
+                const count = this.clear();
+                alert(`Cleared ${count} cached items. Data refreshed!`);
+            });
+
+            container.appendChild(refreshBtn);
+        });
+    }
+};
+
+// Initialize cache
+const cache = appCache.init();
+
+// Initialize map and other variables
 let map;
 let markers = [];
 let currentInfoWindow = null;
 let currentPosition = null;
-
-// const radiusSelect = document.getElementById('radius-select');
-// const radius = document.getElementById('radius-value');
-//
-// // Update the value display when the slider is moved
-// radiusSelect.addEventListener('input', function () {
-//     const radiusInKm = radiusSelect.value / 1000; // Convert from meters to kilometers
-//     radius.textContent = `${radiusInKm}km`; // Update the display text
-// });
-
 
 function initMap() {
     // Default center (can be anywhere, user will search or use location)
@@ -188,8 +341,9 @@ function clearMarkers() {
     markers = [];
 }
 
-function fetchResources() {
 
+// fetchResources function to fetch data from the server
+function fetchResources() {
     if (!currentPosition) return;
 
     const showLibraries = document.getElementById("library-filter").checked;
@@ -201,129 +355,181 @@ function fetchResources() {
     const showBookStores = document.getElementById("bookstores-filter").checked;
     const radius = document.getElementById("radius-select").value;
     const startDate = new Date().toISOString().split('T')[0]; // Current date
-    let endDate = null
+    let endDate = null;
 
     document.getElementById("libraries-list").innerHTML = "Loading...";
     document.getElementById("events-list").innerHTML = "Loading...";
-    document.getElementById("schools-filter").innerHTML = "Loading...";
-    document.getElementById("universities-filter").innerHTML = "Loading...";
+    document.getElementById("schools-list").innerHTML = "Loading...";
+    document.getElementById("universities-list").innerHTML = "Loading...";
 
     const location = `${currentPosition.lat},${currentPosition.lng}`;
 
     if (showLibraries) {
-        // Fetch libraries
-        fetch(`/api/nearby-search/?location=${location}&radius=${radius}&type=library`)
-            .then(response => response.json())
-            .then(data => {
-                console.log(data);
-                displayLibraries(data.places);
-            })
-            .catch(error => {
-                console.error('Error fetching libraries:', error);
-                document.getElementById("libraries-list").innerHTML = "<p>Error loading libraries</p>";
-            });
+        // Check cache first
+        const cacheParams = { location, radius, type: 'library' };
+        const cachedData = cache.get('places', cacheParams);
+
+        if (cachedData) {
+            displayLibraries(cachedData);
+        } else {
+            // Fetch from server
+            fetch(`/api/nearby-search/?location=${location}&radius=${radius}&type=library`)
+                .then(response => response.json())
+                .then(data => {
+                    // console.log(data);
+                    // Cache the data for 30 minutes
+                    cache.set('places', cacheParams, data.places, 30);
+                    displayLibraries(data.places);
+                })
+                .catch(error => {
+                    console.error('Error fetching libraries:', error);
+                    document.getElementById("libraries-list").innerHTML = "<p>Error loading libraries</p>";
+                });
+        }
     } else {
         document.getElementById("libraries-list").innerHTML = "<p>Libraries filter is turned off</p>";
     }
 
     if (showUniversities) {
-        // Fetch libraries
-        fetch(`/api/nearby-search/?location=${location}&radius=${radius}&type=university`)
-            .then(response => response.json())
-            .then(data => {
-                console.log(data);
-                displayUniversities(data.places);
-            })
-            .catch(error => {
-                console.error('Error fetching Univerities:', error);
-                document.getElementById("universities-list").innerHTML = "<p>Error loading Universities</p>";
-            });
+        const cacheParams = { location, radius, type: 'university' };
+        const cachedData = cache.get('places', cacheParams);
+
+        if (cachedData) {
+            displayUniversities(cachedData);
+        } else {
+            fetch(`/api/nearby-search/?location=${location}&radius=${radius}&type=university`)
+                .then(response => response.json())
+                .then(data => {
+                    // console.log(data);
+                    cache.set('places', cacheParams, data.places, 30);
+                    displayUniversities(data.places);
+                })
+                .catch(error => {
+                    console.error('Error fetching Universities:', error);
+                    document.getElementById("universities-list").innerHTML = "<p>Error loading Universities</p>";
+                });
+        }
     } else {
         document.getElementById("universities-list").innerHTML = "<p>Universities filter is turned off</p>";
     }
     if (showSchools) {
-        // Fetch libraries
-        fetch(`/api/nearby-search/?location=${location}&radius=${radius}&type=school`)
-            .then(response => response.json())
-            .then(data => {
-                console.log(data);
-                displaySchools(data.places);
-            })
-            .catch(error => {
-                console.error('Error fetching schools:', error);
-                document.getElementById("schools-list").innerHTML = "<p>Error loading schools</p>";
-            });
-    } else {
-        document.getElementById("schools-list").innerHTML = "<p>schools filter is turned off</p>";
-    }
-    // console.log(startDate, endDate);
-    if (showEvents) {
-        // Fetch events
-        fetch(`/api/events/education/?location=${location}&radius=${radius}&start=${startDate}&end=${endDate}`)
-            .then(response => response.json())
-            .then(data => {
-                displayEvents(data);
+        const cacheParams = { location, radius, type: 'school' };
+        const cachedData = cache.get('places', cacheParams);
 
-            })
-            .catch(error => {
-                console.error('Error fetching events:', error);
-                document.getElementById("events-list").innerHTML = "<p>Error loading events</p>";
-            });
+        if (cachedData) {
+            displaySchools(cachedData);
+        } else {
+            fetch(`/api/nearby-search/?location=${location}&radius=${radius}&type=school`)
+                .then(response => response.json())
+                .then(data => {
+                    // console.log(data);
+                    cache.set('places', cacheParams, data.places, 30);
+                    displaySchools(data.places);
+                })
+                .catch(error => {
+                    console.error('Error fetching Schools:', error);
+                    document.getElementById("schools-list").innerHTML = "<p>Error loading Schools</p>";
+                });
+        }
+    } else {
+        document.getElementById("schools-list").innerHTML = "<p>Schools filter is turned off</p>";
+    }
+
+    if (showEvents) {
+        const cacheParams = { location, radius, startDate };
+        const cachedData = cache.get('events', cacheParams);
+
+        if (cachedData) {
+            displayEvents(cachedData);
+        } else {
+            fetch(`/api/events/education/?location=${location}&radius=${radius}&start=${startDate}&end=${endDate}`)
+                .then(response => response.json())
+                .then(data => {
+                    // Cache for 1 hour (events are more dynamic)
+                    cache.set('events', cacheParams, data, 60);
+                    displayEvents(data);
+                })
+                .catch(error => {
+                    console.error('Error fetching events:', error);
+                    document.getElementById("events-list").innerHTML = "<p>Error loading events</p>";
+                });
+        }
     } else {
         document.getElementById("events-list").innerHTML = "<p>Events filter is turned off</p>";
     }
 
     if (showPrimarySchools) {
-        // Fetch libraries
-        fetch(`/api/nearby-search/?location=${location}&radius=${radius}&type=primary_school`)
-            .then(response => response.json())
-            .then(data => {
-                console.log(data);
-                displayPrimarySchools(data.places);
-            })
-            .catch(error => {
-                console.error('Error fetching primary schools:', error);
-                document.getElementById("primary-schools-list").innerHTML = "<p>Error loading libraries</p>";
-            });
+        const cacheParams = { location, radius, type: 'primary_school' };
+        const cachedData = cache.get('places', cacheParams);
+
+        if (cachedData) {
+            displayPrimarySchools(cachedData);
+        } else {
+            fetch(`/api/nearby-search/?location=${location}&radius=${radius}&type=primary_school`)
+                .then(response => response.json())
+                .then(data => {
+                    // console.log(data);
+                    cache.set('places', cacheParams, data.places, 30);
+                    displayPrimarySchools(data.places);
+                })
+                .catch(error => {
+                    console.error('Error fetching Primary Schools:', error);
+                    document.getElementById("primary-schools-list").innerHTML = "<p>Error loading Primary Schools</p>";
+                });
+        }
     } else {
-        document.getElementById("primary-schools-list").innerHTML = "<p>Libraries filter is turned off</p>";
+        document.getElementById("primary-schools-list").innerHTML = "<p>Primary Schools filter is turned off</p>";
     }
 
     if (showSecondarySchools) {
-        // Fetch libraries
-        fetch(`/api/nearby-search/?location=${location}&radius=${radius}&type=secondary_school`)
-            .then(response => response.json())
-            .then(data => {
-                console.log(data);
-                displaySecondarySchools(data.places);
-            })
-            .catch(error => {
-                console.error('Error fetching secondary Schools:', error);
-                document.getElementById("secondary-schools-list").innerHTML = "<p>Error loading libraries</p>";
-            });
+        const cacheParams = { location, radius, type: 'secondary_school' };
+        const cachedData = cache.get('places', cacheParams);
+
+        if (cachedData) {
+            displaySecondarySchools(cachedData);
+        } else {
+            fetch(`/api/nearby-search/?location=${location}&radius=${radius}&type=secondary_school`)
+                .then(response => response.json())
+                .then(data => {
+                    // console.log(data);
+                    cache.set('places', cacheParams, data.places, 30);
+                    displaySecondarySchools(data.places);
+                })
+                .catch(error => {
+                    console.error('Error fetching Secondary Schools:', error);
+                    document.getElementById("secondary-schools-list").innerHTML = "<p>Error loading Secondary Schools</p>";
+                });
+        }
     } else {
-        document.getElementById("secondary-schools-list").innerHTML = "<p>Secondary schools filter is turned off</p>";
+        document.getElementById("secondary-schools-list").innerHTML = "<p>Secondary Schools filter is turned off</p>";
     }
 
     if (showBookStores) {
-        // Fetch libraries
-        fetch(`/api/nearby-search/?location=${location}&radius=${radius}&type=book_store`)
-            .then(response => response.json())
-            .then(data => {
-                console.log(data);
-                displayBookStores(data.places);
-            })
-            .catch(error => {
-                console.error('Error fetching Book Stores:', error);
-                document.getElementById("book-stores-list").innerHTML = "<p>Error loading libraries</p>";
-            });
+        const cacheParams = { location, radius, type: 'book_store' };
+        const cachedData = cache.get('places', cacheParams);
+
+        if (cachedData) {
+            displayBookStores(cachedData);
+        } else {
+            fetch(`/api/nearby-search/?location=${location}&radius=${radius}&type=book_store`)
+                .then(response => response.json())
+                .then(data => {
+                    // console.log(data);
+                    cache.set('places', cacheParams, data.places, 30);
+                    displayBookStores(data.places);
+                })
+                .catch(error => {
+                    console.error('Error fetching Book Stores:', error);
+                    document.getElementById("bookstores-list").innerHTML = "<p>Error loading Book Stores</p>";
+                });
+        }
     } else {
-        document.getElementById("book-stores-list").innerHTML = "<p>Book stores filter is turned off</p>";
+        document.getElementById("bookstores-list").innerHTML = "<p>Book Stores filter is turned off</p>";
     }
 
 }
 
-
+// Function to display libraries
 function displayLibraries(places) {
     if (!places || places.length === 0) {
         document.getElementById("libraries-list").innerHTML = "<p>No libraries found in this area</p>";
@@ -333,19 +539,33 @@ function displayLibraries(places) {
     let html = '';
 
     places.forEach(place => {
-        // console.log(place.latitude, place.longitude)
-        // Add marker to map
         if (document.getElementById("library-filter").checked) {
             const marker = new google.maps.Marker({
                 position: {
                     lat: place.latitude, lng: place.longitude,
-                }, map: map, title: place.name, icon: {
+                },
+                map: map,
+                title: place.name,
+                icon: {
                     url: "http://maps.google.com/mapfiles/ms/icons/green-dot.png"
                 }
             });
 
+            //Info window content with already available data
+            let content = `<div><h5>${place.name}</h5><p>${place.vicinity}</p>`;
+
+            if (place.phone_number) {
+                content += `<p>Phone: ${place.phone_number}</p>`;
+            }
+
+            if (place.website) {
+                content += `<p><a href="${place.website}" target="_blank">Website</a></p>`;
+            }
+
+            content += '</div>';
+
             const infoWindow = new google.maps.InfoWindow({
-                content: `<div><h5>${place.name}</h5><p>${place.vicinity}</p></div>`
+                content: content
             });
 
             marker.addListener("click", () => {
@@ -354,29 +574,11 @@ function displayLibraries(places) {
                 }
                 infoWindow.open(map, marker);
                 currentInfoWindow = infoWindow;
-
-                // Get more details
-                fetch(`/api/place-details/?placeId=${place.place_id}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        const result = data.result || {};
-                        let content = `<div><h5>${place.name}</h5><p>${place.vicinity}</p>`;
-
-                        if (result.formatted_phone_number) {
-                            content += `<p>Phone: ${result.formatted_phone_number}</p>`;
-                        }
-
-                        if (result.website) {
-                            content += `<p><a href="${result.website}" target="_blank">Website</a></p>`;
-                        }
-
-                        content += '</div>';
-                        infoWindow.setContent(content);
-                    });
             });
+
             markers.push(marker);
         }
-
+        // console.log(place.place_id);
         // Add to list
         html += `
                 <div class="resource-item">
@@ -387,8 +589,7 @@ function displayLibraries(places) {
                         ${place.open_now ? '<span class="badge bg-success">Open Now</span>' : ''}
                     </div>
                     <div>
-<!--                    <a href="api/library/" class="btn btn-primary btn-sm">details</a>-->
-                        <a href="api/library-details/${place.place_id}" class="btn btn-primary btn-sm">View Details</a>
+                        <a href="/api/library-details/${place.place_id}" class="btn btn-primary btn-sm">View Details</a>
                     </div>
                 </div>`;
     });
@@ -487,8 +688,20 @@ function displayUniversities(places) {
                 }
             });
 
+            let content = `<div><h5>${place.name}</h5><p>${place.vicinity}</p>`;
+
+            if (place.phone_number) {
+                content += `<p>Phone: ${place.phone_number}</p>`;
+            }
+
+            if (place.website) {
+                content += `<p><a href="${place.website}" target="_blank">Website</a></p>`;
+            }
+
+            content += '</div>';
+
             const infoWindow = new google.maps.InfoWindow({
-                content: `<div><h5>${place.name}</h5><p>${place.vicinity}</p></div>`
+                content: content
             });
 
             marker.addListener("click", () => {
@@ -497,25 +710,6 @@ function displayUniversities(places) {
                 }
                 infoWindow.open(map, marker);
                 currentInfoWindow = infoWindow;
-
-                // Get more details
-                fetch(`/api/place-details/?placeId=${place.place_id}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        const result = data.result || {};
-                        let content = `<div><h5>${place.name}</h5><p>${place.vicinity}</p>`;
-
-                        if (result.formatted_phone_number) {
-                            content += `<p>Phone: ${result.formatted_phone_number}</p>`;
-                        }
-
-                        if (result.website) {
-                            content += `<p><a href="${result.website}" target="_blank">Website</a></p>`;
-                        }
-
-                        content += '</div>';
-                        infoWindow.setContent(content);
-                    });
             });
 
             markers.push(marker);
@@ -530,8 +724,12 @@ function displayUniversities(places) {
                         <span class="badge bg-info">${place.rating ? place.rating + '★' : 'No rating'}</span>
                         ${place.open_now ? '<span class="badge bg-success">Open Now</span>' : ''}
                     </div>
+                    <div>
+                        <a href="api/library-details/${place.place_id}" class="btn btn-primary btn-sm">View Details</a>
+                    </div>
                 </div>`;
     });
+
 
     document.getElementById("universities-list").innerHTML = html;
 }
@@ -555,8 +753,20 @@ function displaySchools(places) {
                 }
             });
 
+            let content = `<div><h5>${place.name}</h5><p>${place.vicinity}</p>`;
+
+            if (place.phone_number) {
+                content += `<p>Phone: ${place.phone_number}</p>`;
+            }
+
+            if (place.website) {
+                content += `<p><a href="${place.website}" target="_blank">Website</a></p>`;
+            }
+
+            content += '</div>';
+
             const infoWindow = new google.maps.InfoWindow({
-                content: `<div><h5>${place.name}</h5><p>${place.vicinity}</p></div>`
+                content: content
             });
 
             marker.addListener("click", () => {
@@ -565,25 +775,6 @@ function displaySchools(places) {
                 }
                 infoWindow.open(map, marker);
                 currentInfoWindow = infoWindow;
-
-                // Get more details
-                fetch(`/api/place-details/?placeId=${place.place_id}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        const result = data.result || {};
-                        let content = `<div><h5>${place.name}</h5><p>${place.vicinity}</p>`;
-
-                        if (result.formatted_phone_number) {
-                            content += `<p>Phone: ${result.formatted_phone_number}</p>`;
-                        }
-
-                        if (result.website) {
-                            content += `<p><a href="${result.website}" target="_blank">Website</a></p>`;
-                        }
-
-                        content += '</div>';
-                        infoWindow.setContent(content);
-                    });
             });
 
             markers.push(marker);
@@ -598,8 +789,12 @@ function displaySchools(places) {
                         <span class="badge bg-info">${place.rating ? place.rating + '★' : 'No rating'}</span>
                         ${place.open_now ? '<span class="badge bg-success">Open Now</span>' : ''}
                     </div>
+                    <div>
+                        <a href="api/library-details/${place.place_id}" class="btn btn-primary btn-sm">View Details</a>
+                    </div>
                 </div>`;
     });
+
 
     document.getElementById("schools-list").innerHTML = html;
 }
@@ -623,10 +818,20 @@ function displayPrimarySchools(places) {
                 }
             });
             // console.log(place);
+            let content = `<div><h5>${place.name}</h5><p>${place.vicinity}</p>`;
+
+            if (place.phone_number) {
+                content += `<p>Phone: ${place.phone_number}</p>`;
+            }
+
+            if (place.website) {
+                content += `<p><a href="${place.website}" target="_blank">Website</a></p>`;
+            }
+
+            content += '</div>';
+
             const infoWindow = new google.maps.InfoWindow({
-                content: `<div><h5>${place.name}</h5
-                               <p>${place.types[0]}</p>   
-                          </div>`
+                content: content
             });
 
             marker.addListener("click", () => {
@@ -635,27 +840,8 @@ function displayPrimarySchools(places) {
                 }
                 infoWindow.open(map, marker);
                 currentInfoWindow = infoWindow;
-
-                // Get more details
-                fetch(`/api/place-details/?placeId=${place.place_id}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        const result = data.result || {};
-                        let content = `<div><h5>${place.name}</h5><p>${place.types[0]}</p>`;
-
-                        if (result.formatted_phone_number) {
-                            content += `<p>Phone: ${result.formatted_phone_number}</p>`;
-                        }
-
-                        if (result.website) {
-                            content += `<p><a href="${result.website}" target="_blank">Website</a></p>`;
-                        }
-
-                        content += '</div>';
-                        infoWindow.setContent(content);
-                    });
             });
-            // console.log(marker.map)
+
             markers.push(marker);
         }
 
@@ -668,8 +854,12 @@ function displayPrimarySchools(places) {
                         <span class="badge bg-info">${place.rating ? place.rating + '★' : 'No rating'}</span>
                         ${place.open_now ? '<span class="badge bg-success">Open Now</span>' : ''}
                     </div>
+                    <div>
+                        <a href="api/library-details/${place.place_id}" class="btn btn-primary btn-sm">View Details</a>
+                    </div>
                 </div>`;
     });
+
 
     document.getElementById("primary-schools-list").innerHTML = html;
 }
@@ -693,8 +883,20 @@ function displaySecondarySchools(places) {
                 }
             });
 
+            let content = `<div><h5>${place.name}</h5><p>${place.vicinity}</p>`;
+
+            if (place.phone_number) {
+                content += `<p>Phone: ${place.phone_number}</p>`;
+            }
+
+            if (place.website) {
+                content += `<p><a href="${place.website}" target="_blank">Website</a></p>`;
+            }
+
+            content += '</div>';
+
             const infoWindow = new google.maps.InfoWindow({
-                content: `<div><h5>${place.name}</h5><p>${place.vicinity}</p></div>`
+                content: content
             });
 
             marker.addListener("click", () => {
@@ -703,25 +905,6 @@ function displaySecondarySchools(places) {
                 }
                 infoWindow.open(map, marker);
                 currentInfoWindow = infoWindow;
-
-                // Get more details
-                fetch(`/api/place-details/?placeId=${place.place_id}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        const result = data.result || {};
-                        let content = `<div><h5>${place.name}</h5><p>${place.vicinity}</p>`;
-
-                        if (result.formatted_phone_number) {
-                            content += `<p>Phone: ${result.formatted_phone_number}</p>`;
-                        }
-
-                        if (result.website) {
-                            content += `<p><a href="${result.website}" target="_blank">Website</a></p>`;
-                        }
-
-                        content += '</div>';
-                        infoWindow.setContent(content);
-                    });
             });
 
             markers.push(marker);
@@ -736,8 +919,12 @@ function displaySecondarySchools(places) {
                         <span class="badge bg-info">${place.rating ? place.rating + '★' : 'No rating'}</span>
                         ${place.open_now ? '<span class="badge bg-success">Open Now</span>' : ''}
                     </div>
+                    <div>
+                        <a href="api/library-details/${place.place_id}" class="btn btn-primary btn-sm">View Details</a>
+                    </div>
                 </div>`;
     });
+
 
     document.getElementById("secondary-schools-list").innerHTML = html;
 }
@@ -761,8 +948,20 @@ function displayBookStores(places) {
                 }
             });
 
+            let content = `<div><h5>${place.name}</h5><p>${place.vicinity}</p>`;
+
+            if (place.phone_number) {
+                content += `<p>Phone: ${place.phone_number}</p>`;
+            }
+
+            if (place.website) {
+                content += `<p><a href="${place.website}" target="_blank">Website</a></p>`;
+            }
+
+            content += '</div>';
+
             const infoWindow = new google.maps.InfoWindow({
-                content: `<div><h5>${place.name}</h5><p>${place.vicinity}</p></div>`
+                content: content
             });
 
             marker.addListener("click", () => {
@@ -771,25 +970,6 @@ function displayBookStores(places) {
                 }
                 infoWindow.open(map, marker);
                 currentInfoWindow = infoWindow;
-
-                // Get more details
-                fetch(`/api/place-details/?placeId=${place.place_id}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        const result = data.result || {};
-                        let content = `<div><h5>${place.name}</h5><p>${place.vicinity}</p>`;
-
-                        if (result.formatted_phone_number) {
-                            content += `<p>Phone: ${result.formatted_phone_number}</p>`;
-                        }
-
-                        if (result.website) {
-                            content += `<p><a href="${result.website}" target="_blank">Website</a></p>`;
-                        }
-
-                        content += '</div>';
-                        infoWindow.setContent(content);
-                    });
             });
 
             markers.push(marker);
@@ -804,8 +984,12 @@ function displayBookStores(places) {
                         <span class="badge bg-info">${place.rating ? place.rating + '★' : 'No rating'}</span>
                         ${place.open_now ? '<span class="badge bg-success">Open Now</span>' : ''}
                     </div>
+                    <div>
+                        <a href="api/library-details/${place.place_id}" class="btn btn-primary btn-sm">View Details</a>
+                    </div>
                 </div>`;
     });
+
 
     document.getElementById("book-stores-list").innerHTML = html;
 }
@@ -816,3 +1000,4 @@ document.getElementById("location-search").addEventListener("keyup", function (e
         document.getElementById("search-button").click();
     }
 });
+

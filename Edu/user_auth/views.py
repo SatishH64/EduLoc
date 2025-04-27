@@ -1,3 +1,4 @@
+from django.db import transaction
 from django.shortcuts import render, redirect
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
@@ -5,6 +6,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 
 from Edu import settings
+from api.models import FavoriteLibrary
 from .forms import UserEditForm, UserProfileEditForm
 from .models import UserProfile
 
@@ -68,7 +70,43 @@ def logout_view(request):
 
 @login_required
 def user_profile(request):
-    return render(request, 'user_profile.html')
+    user = request.user
+
+    # Ensure the user has a profile
+    if not hasattr(user, 'profile'):
+        UserProfile.objects.create(user=user)
+
+    # Get user's favorite libraries
+    favorite_libraries = FavoriteLibrary.objects.filter(user=user)
+
+    if request.method == 'POST':
+        try:
+            with transaction.atomic():
+                # Update User model fields
+                user.first_name = request.POST.get('first_name', '')
+                user.last_name = request.POST.get('last_name', '')
+                user.email = request.POST.get('email', '')
+                user.save()
+
+                # Update UserProfile fields
+                profile = user.profile
+                profile.phone_number = request.POST.get('phone_number', '')
+                profile.gender = request.POST.get('gender', '')
+                profile.address = request.POST.get('address', '')
+                profile.save()
+
+                messages.success(request, 'Your profile has been updated successfully!')
+                return redirect('user_profile')
+        except Exception as e:
+            messages.error(request, f'Error updating profile: {str(e)}')
+
+    return render(request, 'user_profile.html', {
+        'user': user,
+        'favorite_libraries': favorite_libraries,
+        # You can add these if you implement them later
+        'favorite_books': [],
+        'favorite_events': []
+    })
 
 
 @login_required

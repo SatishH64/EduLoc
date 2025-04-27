@@ -67,3 +67,49 @@
         grid-template-columns: 1fr;
     }
 }
+
+.library-info {
+    border-radius: 10px;
+    margin-bottom: 20px;
+}
+
+.info-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.info-item i {
+    font-size: 1.1rem;
+    margin-right: 10px;
+    width: 20px;
+    text-align: center;
+}
+
+.info-item a {
+    text-decoration: none;
+}
+
+.info-item a:hover {
+    text-decoration: underline;
+}
+
+.profile-avatar {
+    width: 32px;  /* Smaller size */
+    height: 32px; /* Smaller size */
+    border-radius: 50%; /* Makes it circular */
+    object-fit: cover;
+    border: 2px solid #e9ecef;
+}
+
+.profile-btn {
+    padding: 0;
+    margin: 0;
+    border: none;
+    background: transparent;
+    transition: transform 0.2s;
+}
+
+.profile-btn:hover {
+    transform: scale(1.1);
+}
