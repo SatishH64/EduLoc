@@ -56,6 +56,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     div.className = "card mb-3";
                     div.innerHTML = `
                         <div class="card-body">
+                            <img src="${book.cover_url}" alt="" style="width: 100%; height: auto; object-fit: contain;">
                             <h5 class="card-title">${book.title}</h5>
                             <p class="card-text">Author: ${book.author}</p>
                             <p class="card-text">Published: ${book.first_publish_year || "Unknown"}</p>
@@ -63,6 +64,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     `;
                     bookResults.appendChild(div);
                 });
+                
             })
             .catch(error => {
                 console.error("Error searching for books:", error);
